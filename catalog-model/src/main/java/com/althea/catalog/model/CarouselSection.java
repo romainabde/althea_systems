@@ -1,8 +1,9 @@
 package com.althea.catalog.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "carousel_section")

@@ -1,13 +1,14 @@
 package com.althea.catalog.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "homepage_text")
+@Table(name = "footer")
 @Data
-public class HomepageText {
+public class Footer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

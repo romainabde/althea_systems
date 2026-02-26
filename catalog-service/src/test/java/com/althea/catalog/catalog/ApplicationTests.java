@@ -1,4 +1,4 @@
-package com.althea.catalog;
+package com.althea.catalog.catalog;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

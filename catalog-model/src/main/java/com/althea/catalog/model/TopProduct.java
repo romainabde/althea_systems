@@ -1,20 +1,25 @@
 package com.althea.catalog.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
-@Table(name = "footer")
+@Table(name = "top_product")
 @Data
-public class Footer {
+public class TopProduct {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(columnDefinition = "TEXT")
-    private String content;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "product_id", nullable = false)
+    private Product product;
+
+    @Column(name = "display_order")
+    private Integer displayOrder;
 
     private Boolean active;
 

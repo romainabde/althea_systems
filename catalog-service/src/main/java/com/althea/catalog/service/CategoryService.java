@@ -1,23 +1,16 @@
 package com.althea.catalog.service;
 
 import com.althea.catalog.dto.common.CategoryDto;
-import com.althea.catalog.dto.product.ProductAvailability;
 import com.althea.catalog.dto.product.ProductWithImagesDto;
-import com.althea.catalog.dto.product.SimilarProductsDto;
 import com.althea.catalog.exception.ResourceNotFoundException;
 import com.althea.catalog.mapper.CategoryMapper;
-import com.althea.catalog.mapper.ProductMapper;
 import com.althea.catalog.model.Category;
 import com.althea.catalog.model.Product;
-import com.althea.catalog.model.ProductImage;
 import com.althea.catalog.repository.CategoryRepository;
-import com.althea.catalog.repository.ProductImageRepository;
-import com.althea.catalog.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -44,7 +37,7 @@ public class CategoryService {
     public List<ProductWithImagesDto> findCategoryProducts(Integer categoryId) {
 
         // Vérifier que la catégorie existe
-        Category category = getCategoryById(categoryId);
+        getCategoryById(categoryId);
         // Récupérer tous les produits de cette catégorie
         List<Product> products = productService.findProductsByCategoryId(categoryId);
         List<ProductWithImagesDto> productWithImagesDto = new ArrayList<>();
