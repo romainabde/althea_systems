@@ -1,4 +1,4 @@
-package com.althea.catalog.dto;
+package com.althea.catalog.dto.product;
 
 import com.althea.catalog.dto.common.ProductDto;
 import com.althea.catalog.model.ProductImage;

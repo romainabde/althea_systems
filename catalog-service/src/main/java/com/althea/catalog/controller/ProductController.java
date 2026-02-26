@@ -1,6 +1,5 @@
 package com.althea.catalog.controller;
 
-import com.althea.catalog.dto.ProductWithImagesDto;
 import com.althea.catalog.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,5 +23,10 @@ public class ProductController {
     @GetMapping("/{id}/availability")
     public ResponseEntity<?> getAvailability(@PathVariable Integer id) {
         return ResponseEntity.ok(productService.checkAvailability(id));
+    }
+
+    @GetMapping("/{id}/similar")
+    public ResponseEntity<?> getSimilarProducts(@PathVariable Integer id) {
+        return ResponseEntity.ok(productService.getSimilarProducts(id));
     }
 }

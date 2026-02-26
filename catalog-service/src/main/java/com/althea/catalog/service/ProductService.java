@@ -1,8 +1,8 @@
 package com.althea.catalog.service;
 
-import com.althea.catalog.dto.ProductAvailability;
-import com.althea.catalog.dto.ProductWithImagesDto;
-import com.althea.catalog.dto.SimilarProductsDto;
+import com.althea.catalog.dto.product.ProductAvailability;
+import com.althea.catalog.dto.product.ProductWithImagesDto;
+import com.althea.catalog.dto.product.SimilarProductsDto;
 import com.althea.catalog.exception.ResourceNotFoundException;
 import com.althea.catalog.mapper.ProductMapper;
 import com.althea.catalog.model.Product;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,17 +45,6 @@ public class ProductService {
 
     // Récupérer 6 produits similaires
     public SimilarProductsDto getSimilarProducts(Integer productId) {
-        Product product = getProductById(productId);
-
-        List<Product> similarProducts = findProductsByCategoryId(product.getCategory().getId());
-
-        if(!similarProducts.isEmpty() && similarProducts.size() > 6){
-
-
-        }
-    }
-
-    public SimilarProductsDto getSimilarProducts(Integer productId) {
 
         Product product = getProductById(productId);
         List<Product> allSimilarProducts = findProductsByCategoryId(product.getCategory().getId());
@@ -79,7 +67,7 @@ public class ProductService {
         int needed = 6 - finalList.size();
         if (needed > 0 && !outOfStock.isEmpty()) {
             // prendre les premiers needed éléments de outOfStock
-            finalList.addAll(outOfStock.stream().limit(needed).collect(Collectors.toList()));
+            finalList.addAll(outOfStock.stream().limit(needed).toList());
         }
 
         // Si plus de 6, shuffle et prendre 6 au hasard
@@ -89,7 +77,7 @@ public class ProductService {
         }
 
         // Retourne la liste finale
-        return new SimilarProductsDto(productId, finalList);
+        return new SimilarProductsDto(productId, productMapper.toDto(finalList));
     }
 
 
@@ -101,16 +89,8 @@ public class ProductService {
                 .orElseThrow(() -> new ResourceNotFoundException("Le produit n'existe pas."));
     }
 
-    // Rechercher tous les produits
-
-    // Rechercher tous les produits par ordre de priorité (1 étant le plus fort)
-
     // Rechercher tous les produits d'une catégorie
     protected List<Product> findProductsByCategoryId(Integer categoryId) {
         return productRepository.findByCategoryId(categoryId);
     }
-
-    // Rechercher les produits disponibles
-
-
 }
