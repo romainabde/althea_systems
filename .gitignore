@@ -1,0 +1,98 @@
+######################################
+# HELP
+######################################
+HELP.md
+
+######################################
+# Maven
+######################################
+target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+######################################
+# Gradle
+######################################
+.gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+######################################
+# IDE - IntelliJ IDEA
+######################################
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+######################################
+# IDE - STS / Eclipse
+######################################
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+######################################
+# IDE - NetBeans
+######################################
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+######################################
+# VS Code
+######################################
+.vscode/
+
+######################################
+# Logs
+######################################
+*.log
+logs/
+
+######################################
+# OS Files
+######################################
+.DS_Store
+Thumbs.db
+
+######################################
+# Compiled files
+######################################
+*.class
+*.jar
+*.war
+*.ear
+
+######################################
+# Local configuration ONLY
+######################################
+application-local.yml
+application-local.properties
+
+######################################
+# Docker
+######################################
+docker-compose.override.yml
+
+######################################
+# Node
+######################################
+node_modules/
+dist/
