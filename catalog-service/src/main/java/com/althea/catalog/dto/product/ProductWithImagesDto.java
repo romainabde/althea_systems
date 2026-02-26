@@ -5,5 +5,5 @@ import com.althea.catalog.model.ProductImage;
 
 import java.util.List;
 
-public record ProductWithImagesDto(ProductDto product, List<ProductImage> productImage) {
+public record ProductWithImagesDto(ProductDto product, List<ProductImage> images) {
 }

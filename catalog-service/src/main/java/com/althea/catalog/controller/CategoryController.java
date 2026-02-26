@@ -15,7 +15,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @GetMapping("/")
+    @GetMapping()
     public ResponseEntity<?> findCategories() {
         return ResponseEntity.ok(categoryService.findCategories());
     }

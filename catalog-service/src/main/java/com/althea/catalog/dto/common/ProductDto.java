@@ -1,5 +1,6 @@
 package com.althea.catalog.dto.common;
 
+import com.althea.catalog.model.Product;
 import lombok.*;
 
 import java.math.BigDecimal;
