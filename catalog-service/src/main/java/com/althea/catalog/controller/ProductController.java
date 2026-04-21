@@ -1,12 +1,10 @@
 package com.althea.catalog.controller;
 
+import com.althea.catalog.dto.product.ProductSearchRequest;
 import com.althea.catalog.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/products")
@@ -14,6 +12,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductController {
 
     private final ProductService productService;
+
+    @GetMapping
+    public Object searchProducts(@ModelAttribute ProductSearchRequest request) {
+        return productService.searchProducts(request);
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getProduct(@PathVariable Integer id) {

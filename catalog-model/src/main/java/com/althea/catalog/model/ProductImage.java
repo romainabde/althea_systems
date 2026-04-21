@@ -16,7 +16,7 @@ public class ProductImage {
     @Id
     private String id;
 
-    private Integer productId; // Ref à la base sql
+    private Integer productId;
     private String url;
     private String altText;
 }
