@@ -6,6 +6,7 @@ import com.althea.catalog.dto.product.ProductWithImagesDto;
 import com.althea.catalog.dto.product.SimilarProductsDto;
 import com.althea.catalog.exception.ResourceNotFoundException;
 import com.althea.catalog.mapper.ProductMapper;
+import com.althea.catalog.model.Category;
 import com.althea.catalog.model.Product;
 import com.althea.catalog.model.ProductImage;
 import com.althea.catalog.repository.ProductImageRepository;
@@ -18,6 +19,7 @@ import jakarta.persistence.criteria.*;
 import org.springframework.data.domain.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,120 +29,129 @@ public class ProductService {
     private final ProductImageRepository imageRepository;
     private final ProductMapper productMapper;
 
-    // Rechercher des produits avec filtres/ tri
-    public Page<Product> searchProducts(ProductSearchRequest request) {
 
-        Specification<Product> spec = (root, query, cb) -> {
+    private Sort buildSort(String sort) {
 
-            List<Predicate> predicates = new ArrayList<>();
+        if (sort == null) {
+            return Sort.by(Sort.Direction.DESC, "createdAt");
+        }
 
-            // =========================
-            // 1. TITRE
-            // =========================
-            if (request.getTitle() != null && !request.getTitle().isBlank()) {
-                String title = request.getTitle().toLowerCase();
-
-                predicates.add(
-                        cb.like(cb.lower(root.get("title")), "%" + title + "%")
-                );
-            }
-
-            // =========================
-            // 2. DESCRIPTION
-            // =========================
-            if (request.getDescription() != null && !request.getDescription().isBlank()) {
-                String desc = request.getDescription().toLowerCase();
-
-                predicates.add(
-                        cb.like(cb.lower(root.get("description")), "%" + desc + "%")
-                );
-            }
-
-            // =========================
-            // 3. PRIX
-            // =========================
-            if (request.getMinPrice() != null) {
-                predicates.add(
-                        cb.greaterThanOrEqualTo(root.get("price"), request.getMinPrice())
-                );
-            }
-
-            if (request.getMaxPrice() != null) {
-                predicates.add(
-                        cb.lessThanOrEqualTo(root.get("price"), request.getMaxPrice())
-                );
-            }
-
-            // =========================
-            // 4. DISPONIBILITÉ
-            // =========================
-            if (request.getAvailable() != null && request.getAvailable()) {
-                predicates.add(
-                        cb.greaterThan(root.get("stock"), 0)
-                );
-            }
-
-            // =========================
-            // 5. CATÉGORIES
-            // =========================
-            if (request.getCategories() != null && !request.getCategories().isEmpty()) {
-
-                Join<Object, Object> categoryJoin = root.join("category");
-
-                predicates.add(
-                        categoryJoin.get("name").in(request.getCategories())
-                );
-            }
-
-            // =========================
-            // 6. SPECS
-            // =========================
-            if (request.getSpecs() != null && !request.getSpecs().isEmpty()) {
-
-                // suppose relation: product -> attributes
-                Join<Object, Object> attrJoin = root.join("attributes");
-
-                List<Predicate> specPredicates = new ArrayList<>();
-
-                request.getSpecs().forEach((key, value) -> {
-                    specPredicates.add(
-                            cb.and(
-                                    cb.equal(attrJoin.get("name"), key),
-                                    cb.equal(attrJoin.get("value"), value)
-                            )
-                    );
-                });
-
-                predicates.add(cb.and(specPredicates.toArray(new Predicate[0])));
-            }
-
-            return cb.and(predicates.toArray(new Predicate[0]));
+        return switch (sort) {
+            case "price_asc" -> Sort.by("price").ascending();
+            case "price_desc" -> Sort.by("price").descending();
+            case "newest" -> Sort.by("createdAt").descending();
+            case "oldest" -> Sort.by("createdAt").ascending();
+            case "availability" -> Sort.by("stock").descending();
+            default -> Sort.by("createdAt").descending();
         };
+    }
 
-        // =========================
-        // SORT
-        // =========================
-        Sort sort = buildSort(request.getSort());
+    // Rechercher des produits avec filtres/ tri
+    public Page<ProductWithImagesDto> searchProducts(ProductSearchRequest request) {
+
+        Specification<Product> spec = buildSpecification(request);
 
         Pageable pageable = PageRequest.of(
                 Optional.ofNullable(request.getPage()).orElse(0),
                 Optional.ofNullable(request.getSize()).orElse(20),
-                sort
+                buildSort(request.getSort())
         );
 
-        return productRepository.findAll(spec, pageable);
+        // =========================
+        // 1. PRODUCTS PAGE
+        // =========================
+        Page<Product> productPage = productRepository.findAll(spec, pageable);
 
-        /*
+        List<Product> products = productPage.getContent();
 
-        Page<Product> products = cb.and(predicates.toArray(new Predicate[0]));
-            List<ProductWithImagesDto> response = new ArrayList<>();
-            for(Product product : products) {
-                List<ProductImage> images = imageRepository.findByProductId(product.getId());
-                response.add(new ProductWithImagesDto(productMapper.toDto(product), images));
+        if (products.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        // =========================
+        // 2. IMAGES (BATCH QUERY)
+        // =========================
+        List<Integer> productIds = products.stream()
+                .map(Product::getId)
+                .toList();
+
+        List<ProductImage> images = imageRepository.findByProductIdIn(productIds);
+
+        Map<Integer, List<ProductImage>> imagesByProductId = images.stream()
+                .collect(Collectors.groupingBy(ProductImage::getProductId));
+
+        // =========================
+        // 3. MAPPING DTO
+        // =========================
+        List<ProductWithImagesDto> result = products.stream()
+                .map(product -> new ProductWithImagesDto(
+                        productMapper.toDto(product),
+                        imagesByProductId.getOrDefault(product.getId(), List.of())
+                ))
+                .toList();
+
+        // =========================
+        // 4. RETURN PAGE
+        // =========================
+        return new PageImpl<>(
+                result,
+                pageable,
+                productPage.getTotalElements()
+        );
+    }
+
+    private Specification<Product> buildSpecification(ProductSearchRequest request) {
+
+        return (root, query, cb) -> {
+
+            List<Predicate> predicates = new ArrayList<>();
+
+            // TITLE
+            if (request.getTitle() != null && !request.getTitle().isBlank()) {
+                predicates.add(
+                        cb.like(cb.lower(root.get("name")),
+                                "%" + request.getTitle().toLowerCase() + "%")
+                );
             }
 
-            return response;
-         */
+            // DESCRIPTION
+            if (request.getDescription() != null && !request.getDescription().isBlank()) {
+                predicates.add(
+                        cb.like(cb.lower(root.get("description")),
+                                "%" + request.getDescription().toLowerCase() + "%")
+                );
+            }
+
+            // PRICE
+            if (request.getMinPrice() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), request.getMinPrice()));
+            }
+
+            if (request.getMaxPrice() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("price"), request.getMaxPrice()));
+            }
+
+            // AVAILABLE
+            if (Boolean.TRUE.equals(request.getAvailable())) {
+                predicates.add(cb.greaterThan(root.get("stock"), 0));
+            }
+
+            // CATEGORY
+            if (request.getCategories() != null && !request.getCategories().isEmpty()) {
+
+                Join<Product, Category> categoryJoin = root.join("category");
+
+                predicates.add(
+                        cb.lower(categoryJoin.get("name")).in(
+                                request.getCategories().stream()
+                                        .map(String::toLowerCase)
+                                        .toList()
+                        )
+                );
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     // Rechercher un produit et ses images
@@ -211,31 +222,5 @@ public class ProductService {
     // Rechercher tous les produits d'une catégorie
     protected List<Product> findProductsByCategoryId(Integer categoryId) {
         return productRepository.findByCategoryId(categoryId);
-    }
-
-    // Trieur
-    private Sort buildSort(String sortParam) {
-
-        if (sortParam == null || sortParam.isBlank()) {
-            return Sort.unsorted();
-        }
-
-        try {
-            String[] parts = sortParam.split(",");
-            String field = parts[0];
-            String direction = parts.length > 1 ? parts[1] : "asc";
-
-            Sort.Direction dir = direction.equalsIgnoreCase("desc")
-                    ? Sort.Direction.DESC
-                    : Sort.Direction.ASC;
-
-            return switch (field) {
-                case "price", "createdAt", "stock" -> Sort.by(dir, field);
-                default -> Sort.unsorted();
-            };
-
-        } catch (Exception e) {
-            return Sort.unsorted();
-        }
     }
 }

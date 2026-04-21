@@ -13,9 +13,9 @@ public class ProductController {
 
     private final ProductService productService;
 
-    @GetMapping
-    public Object searchProducts(@ModelAttribute ProductSearchRequest request) {
-        return productService.searchProducts(request);
+    @GetMapping()
+    public ResponseEntity<?> searchProducts(@ModelAttribute ProductSearchRequest request) {
+        return ResponseEntity.ok(productService.searchProducts(request));
     }
 
     @GetMapping("/{id}")
