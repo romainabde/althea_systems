@@ -1,6 +1,6 @@
 package com.althea.catalog.repository;
 
-import com.althea.catalog.model.CarouselSection;
+import com.althea.shared.model.CarouselSection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

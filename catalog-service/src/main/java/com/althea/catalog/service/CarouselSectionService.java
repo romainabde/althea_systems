@@ -1,6 +1,6 @@
 package com.althea.catalog.service;
 
-import com.althea.catalog.model.CarouselSection;
+import com.althea.shared.model.CarouselSection;
 import com.althea.catalog.repository.CarouselSectionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

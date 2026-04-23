@@ -1,6 +1,6 @@
 package com.althea.catalog.service;
 
-import com.althea.catalog.model.HomepageText;
+import com.althea.shared.model.HomepageText;
 import com.althea.catalog.repository.HomepageTextRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

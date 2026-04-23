@@ -81,7 +81,7 @@
 		</dependency>
         <dependency>
             <groupId>com.althea</groupId>
-            <artifactId>sahred-models</artifactId>
+            <artifactId>shared-models</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>

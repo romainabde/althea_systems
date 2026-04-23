@@ -1,6 +1,6 @@
 package com.althea.catalog.service;
 
-import com.althea.catalog.model.Footer;
+import com.althea.shared.model.Footer;
 import com.althea.catalog.repository.FooterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

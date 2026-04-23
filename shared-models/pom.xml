@@ -3,11 +3,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.althea</groupId>
-    <artifactId>sahred-models</artifactId>
+    <artifactId>shared-models</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>catalog-model</name>
+    <name>shared-models</name>
     <url>http://maven.apache.org</url>
 
     <properties>

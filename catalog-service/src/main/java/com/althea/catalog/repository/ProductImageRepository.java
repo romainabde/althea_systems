@@ -1,6 +1,6 @@
 package com.althea.catalog.repository;
 
-import com.althea.catalog.model.ProductImage;
+import com.althea.shared.model.ProductImage;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Collection;

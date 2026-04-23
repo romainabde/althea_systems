@@ -1,7 +1,7 @@
 package com.althea.catalog.service;
 
 import com.althea.catalog.dto.product.ProductWithImagesDto;
-import com.althea.catalog.model.TopProduct;
+import com.althea.shared.model.TopProduct;
 import com.althea.catalog.repository.TopProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

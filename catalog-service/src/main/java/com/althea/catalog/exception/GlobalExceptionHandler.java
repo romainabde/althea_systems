@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobal(Exception ex) {
         return new ResponseEntity<>(
-                new ErrorResponse(false, "Erreur interne du serveur"),
+                new ErrorResponse(false, "Internal server error"),
                 HttpStatus.INTERNAL_SERVER_ERROR
         );
     }

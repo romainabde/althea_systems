@@ -2,9 +2,9 @@ package com.althea.catalog.service;
 
 import com.althea.catalog.dto.home.HomePageDto;
 import com.althea.catalog.dto.product.ProductWithImagesDto;
-import com.althea.catalog.model.CarouselSection;
-import com.althea.catalog.model.Footer;
-import com.althea.catalog.model.HomepageText;
+import com.althea.shared.model.CarouselSection;
+import com.althea.shared.model.Footer;
+import com.althea.shared.model.HomepageText;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

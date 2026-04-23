@@ -1,7 +1,7 @@
 package com.althea.catalog.mapper;
 
 import com.althea.catalog.dto.common.CategoryDto;
-import com.althea.catalog.model.Category;
+import com.althea.shared.model.Category;
 import org.mapstruct.Mapper;
 
 import java.util.List;

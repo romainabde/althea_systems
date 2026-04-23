@@ -1,6 +1,6 @@
 package com.althea.catalog.repository;
 
-import com.althea.catalog.model.Product;
+import com.althea.shared.model.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
