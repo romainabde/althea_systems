@@ -4,7 +4,7 @@ import { API_ROUTES } from "../routes";
 import { searchMock } from "../mocks/search.mock";
 
 export async function fetchSearchProducts(params = {}) {
-  if (API_CONFIG.useMocks || API_CONFIG.useMocksByDomain?.search) {
+  if (API_CONFIG.useMocks) {
     const query = (params.query || "").trim().toLowerCase();
     const category = params.category || "";
     const priceRange = params.priceRange || "";
@@ -42,71 +42,21 @@ export async function fetchSearchProducts(params = {}) {
     return { products, total: products.length };
   }
 
-  const backendParams = new URLSearchParams();
-  if (params.query) {
-    backendParams.set("title", params.query);
-    backendParams.set("description", params.query);
-  }
-  if (params.category) backendParams.append("categories", params.category);
-  if (params.onlyAvailable) backendParams.set("available", "true");
-  if (params.sort) backendParams.set("sort", params.sort);
-
-  if (params.priceRange === "0-500") {
-    backendParams.set("maxPrice", "500");
-  } else if (params.priceRange === "500-1000") {
-    backendParams.set("minPrice", "500");
-    backendParams.set("maxPrice", "1000");
-  } else if (params.priceRange === "1000+") {
-    backendParams.set("minPrice", "1000");
-  }
-
-  const queryString = backendParams.toString();
-  const endpoint = queryString ? `${API_ROUTES.products.list}?${queryString}` : API_ROUTES.products.list;
-  try {
-    const page = await httpClient(endpoint);
-    const content = Array.isArray(page?.content) ? page.content : [];
-
-    return {
-      products: content.map((item) => {
-        const product = item?.product || {};
-        return {
-          id: product.id,
-          name: product.name,
-          description: product.description || "",
-          category: product.categoryName || "",
-          price: product.price ?? 0,
-          inStock: typeof product.stock === "number" ? product.stock > 0 : false,
-        };
-      }),
-      total: page?.totalElements ?? 0,
-    };
-  } catch (error) {
-    return { products: [], total: 0 };
-  }
+  const queryString = new URLSearchParams(params).toString();
+  const endpoint = queryString ? `${API_ROUTES.search.products}?${queryString}` : API_ROUTES.search.products;
+  return httpClient(endpoint);
 }
 
 export async function fetchSearchFacets() {
-  if (API_CONFIG.useMocks || API_CONFIG.useMocksByDomain?.search) {
+  if (API_CONFIG.useMocks) {
     return searchMock.facets;
   }
-
-  try {
-    const categories = await httpClient(API_ROUTES.categories.list);
-    return {
-      categories: (Array.isArray(categories) ? categories : []).map((item) => item.name),
-      priceRanges: ["0-500", "500-1000", "1000+"],
-    };
-  } catch (error) {
-    return {
-      categories: [],
-      priceRanges: ["0-500", "500-1000", "1000+"],
-    };
-  }
+  return httpClient(API_ROUTES.search.facets);
 }
 
 export async function fetchSearchSortOptions() {
-  if (API_CONFIG.useMocks || API_CONFIG.useMocksByDomain?.search) {
+  if (API_CONFIG.useMocks) {
     return searchMock.sortOptions;
   }
-  return ["price_asc", "price_desc", "newest", "availability"];
+  return httpClient(API_ROUTES.search.sortOptions);
 }

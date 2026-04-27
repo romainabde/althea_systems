@@ -1,10 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { getCart } from "../../../services/cartService";
-import { placeOrder, startCheckout } from "../../../services/checkoutService";
-import { getCheckoutStateStore } from "../../../services/checkoutState";
+import { getCart } from "../../../utils/cart";
 
 const pageStyle = {
   padding: "1rem",
@@ -39,55 +37,16 @@ const actionLinkStyle = {
 };
 
 export default function CheckoutReviewPage() {
-  const router = useRouter();
-  const [cart, setCart] = useState({ items: [], totals: { total: 0 } });
-  const [error, setError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cart, setCart] = useState([]);
 
   useEffect(() => {
-    async function loadCart() {
-      const data = await getCart();
-      setCart(data);
-    }
-    loadCart();
+    setCart(getCart());
   }, []);
 
-  const total = useMemo(() => cart?.totals?.total || 0, [cart]);
-
-  async function handleConfirm() {
-    const checkoutState = getCheckoutStateStore();
-    if (!checkoutState?.addressId) {
-      setError("Adresse manquante. Veuillez revenir à l'étape adresse.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError("");
-    try {
-      const checkoutResult = await startCheckout({
-        addressId: checkoutState.addressId,
-        email: checkoutState.email,
-      });
-      const orderId = checkoutResult?.order?.id;
-      if (!orderId) {
-        throw new Error("Order missing");
-      }
-
-      const paymentResult = await placeOrder({
-        orderId,
-        paymentMethodId: checkoutState.paymentMethodId || "pm_card_visa",
-      });
-
-      router.push(
-        `/checkout/confirmation?orderId=${encodeURIComponent(orderId)}&tx=${encodeURIComponent(
-          paymentResult?.transactionId || ""
-        )}`
-      );
-    } catch (apiError) {
-      setError("Impossible de confirmer la commande pour le moment.");
-      setIsSubmitting(false);
-    }
-  }
+  const total = useMemo(
+    () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [cart]
+  );
 
   return (
     <section style={pageStyle}>
@@ -98,11 +57,11 @@ export default function CheckoutReviewPage() {
 
       <article style={sectionStyle}>
         <h2 style={{ marginTop: 0, fontSize: "1rem" }}>Produits du panier</h2>
-        {cart.items.length === 0 ? (
+        {cart.length === 0 ? (
           <p style={{ marginBottom: 0 }}>Votre panier est vide.</p>
         ) : (
           <>
-            {cart.items.map((item) => (
+            {cart.map((item) => (
               <div key={item.id} style={itemStyle}>
                 <p style={{ margin: 0, fontWeight: 600 }}>{item.name}</p>
                 <p style={{ margin: "0.35rem 0 0 0", color: "#444" }}>
@@ -142,15 +101,9 @@ export default function CheckoutReviewPage() {
         </p>
       </article>
 
-      {error ? <p style={{ color: "#b91c1c", marginTop: "0.75rem" }}>{error}</p> : null}
-
-      <button
-        onClick={handleConfirm}
-        disabled={isSubmitting || cart.items.length === 0}
-        style={{ ...actionLinkStyle, border: "none", cursor: "pointer" }}
-      >
-        {isSubmitting ? "Confirmation..." : "Confirmer la commande"}
-      </button>
+      <Link href="/checkout/confirmation" style={actionLinkStyle}>
+        Confirmer la commande
+      </Link>
     </section>
   );
 }

@@ -5,21 +5,18 @@ export async function getCart() {
 }
 
 export async function addProductToCart(product, quantity = 1) {
-  await addCartItem({
+  return addCartItem({
     productId: product.id,
     name: product.name,
     price: product.price,
     quantity,
   });
-  return fetchCart();
 }
 
 export async function changeCartItemQuantity(itemId, quantity) {
-  await updateCartItem(itemId, { quantity });
-  return fetchCart();
+  return updateCartItem(itemId, { quantity });
 }
 
 export async function removeProductFromCart(itemId) {
-  await deleteCartItem(itemId);
-  return fetchCart();
+  return deleteCartItem(itemId);
 }

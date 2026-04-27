@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getCheckoutStateStore, setCheckoutStateStore } from "../../../services/checkoutState";
 
 const pageStyle = {
   padding: "1rem",
@@ -70,11 +69,6 @@ export default function CheckoutPaymentPage() {
       return;
     }
 
-    const current = getCheckoutStateStore();
-    setCheckoutStateStore({
-      ...current,
-      paymentMethodId: "pm_card_visa",
-    });
     router.push("/checkout/review");
   };
 

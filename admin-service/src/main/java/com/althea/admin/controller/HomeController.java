@@ -14,29 +14,27 @@ public class HomeController {
 
     private final HomeService homeService;
 
-    // GET
-    @GetMapping
+    @GetMapping("/carousel")
     public ResponseEntity<?> getCarousel() {
         return ResponseEntity.ok(homeService.findCarousel());
     }
 
-    @GetMapping
+    @GetMapping("/homepage-text")
     public ResponseEntity<?> getHomepageText() {
         return ResponseEntity.ok(homeService.getHomepageText());
     }
 
-    @GetMapping
+    @GetMapping("/top-products")
     public ResponseEntity<?> getTopProducts() {
         return ResponseEntity.ok(homeService.getTopProducts());
     }
 
-    @GetMapping
+    @GetMapping("/footer")
     public ResponseEntity<?> getFooter() {
         return ResponseEntity.ok(homeService.getFooter());
     }
 
-    // POST
-    @PostMapping
+    @PostMapping("/carousel/sections")
     public ResponseEntity<?> createCarouselSection(
             @Valid @RequestBody CarouselSectionCreateRequest request
     ) {
@@ -45,16 +43,14 @@ public class HomeController {
         );
     }
 
-    // PUT
-    @PutMapping
+    @PutMapping("/top-products")
     public ResponseEntity<?> addTopProduct(
             @Valid @RequestBody TopProductRequest request
     ) {
         return ResponseEntity.ok(homeService.addTopProduct(request));
     }
 
-    // PATCH
-    @PatchMapping("/{id}")
+    @PatchMapping("/carousel/{id}")
     public ResponseEntity<?> updateCarouselSection(
             @PathVariable Integer id,
             @Valid @RequestBody CarouselSectionUpdateRequest request
@@ -64,22 +60,21 @@ public class HomeController {
         );
     }
 
-    @PatchMapping
+    @PatchMapping("/homepage-text")
     public ResponseEntity<?> updateHomepageText(
             @Valid @RequestBody HomepageTextUpdateRequest request
     ) {
         return ResponseEntity.ok(homeService.updateHomepageText(request));
     }
 
-    @PatchMapping
+    @PatchMapping("/footer")
     public ResponseEntity<?> updateFooter(
             @Valid @RequestBody FooterUpdateRequest request
     ) {
         return ResponseEntity.ok(homeService.updateFooter(request));
     }
 
-    // DELETE
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/carousel/{id}")
     public ResponseEntity<?> deleteCarouselSection(
             @PathVariable Integer id
     ) {
@@ -87,7 +82,7 @@ public class HomeController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/top-products/{id}")
     public ResponseEntity<?> deleteTopProduct(@PathVariable Integer id) {
         homeService.removeTopProduct(id);
         return ResponseEntity.noContent().build();

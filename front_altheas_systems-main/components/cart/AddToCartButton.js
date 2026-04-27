@@ -1,10 +1,11 @@
 "use client";
 
-import { addProductToCart } from "../../services/cartService";
+import { addToCart, getCart } from "../../utils/cart";
 
 export default function AddToCartButton({ product }) {
-  const handleAddToCart = async () => {
-    await addProductToCart(product, 1);
+  const handleAddToCart = () => {
+    addToCart(product);
+    console.log("Panier après ajout :", getCart());
     alert("Produit ajouté au panier");
   };
 

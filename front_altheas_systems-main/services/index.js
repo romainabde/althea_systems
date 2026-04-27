@@ -4,4 +4,4 @@ export * from "./productService";
 export * from "./cartService";
 export * from "./searchService";
 export * from "./checkoutService";
-export * from "./authService";
+export * from "./chatbotService";

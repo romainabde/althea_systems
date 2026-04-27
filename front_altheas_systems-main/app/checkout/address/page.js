@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createAddress } from "../../../services/api/addressApi";
-import { getCheckoutStateStore, setCheckoutStateStore } from "../../../services/checkoutState";
+import Link from "next/link";
 
 const pageStyle = {
   padding: "1rem",
@@ -97,39 +95,7 @@ function AddressFields({ prefix }) {
 }
 
 export default function CheckoutAddressPage() {
-  const router = useRouter();
   const [sameBillingAddress, setSameBillingAddress] = useState(true);
-  const [error, setError] = useState("");
-
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setError("");
-
-    const formData = new FormData(event.currentTarget);
-    const payload = {
-      firstName: String(formData.get("shippingFirstName") || "").trim(),
-      lastName: String(formData.get("shippingLastName") || "").trim(),
-      street: String(formData.get("shippingAddress1") || "").trim(),
-      city: String(formData.get("shippingCity") || "").trim(),
-      zipCode: String(formData.get("shippingPostalCode") || "").trim(),
-      country: String(formData.get("shippingCountry") || "").trim(),
-      phone: String(formData.get("shippingPhone") || "").trim(),
-    };
-    const email = String(formData.get("email") || "").trim();
-
-    try {
-      const response = await createAddress(payload);
-      const current = getCheckoutStateStore();
-      setCheckoutStateStore({
-        ...current,
-        addressId: response?.address?.id,
-        email,
-      });
-      router.push("/checkout/payment");
-    } catch (apiError) {
-      setError("Impossible d'enregistrer l'adresse pour le moment.");
-    }
-  }
 
   return (
     <section style={pageStyle}>
@@ -138,17 +104,10 @@ export default function CheckoutAddressPage() {
         Renseignez vos informations de livraison et de facturation.
       </p>
 
-      <form onSubmit={handleSubmit}>
-        <article style={sectionStyle}>
-          <h2 style={{ margin: 0, fontSize: "1rem" }}>Adresse de livraison</h2>
-          <div style={{ ...formGridStyle, marginTop: "0.75rem" }}>
-            <label style={labelStyle}>
-              Email de confirmation
-              <input name="email" type="email" style={inputStyle} required />
-            </label>
-          </div>
-          <AddressFields prefix="shipping" />
-        </article>
+      <article style={sectionStyle}>
+        <h2 style={{ margin: 0, fontSize: "1rem" }}>Adresse de livraison</h2>
+        <AddressFields prefix="shipping" />
+      </article>
 
       <article style={sectionStyle}>
         <label
@@ -175,12 +134,9 @@ export default function CheckoutAddressPage() {
         </article>
       )}
 
-        {error ? <p style={{ color: "#b91c1c", marginTop: "0.75rem" }}>{error}</p> : null}
-
-        <button type="submit" style={{ ...actionLinkStyle, border: "none", cursor: "pointer" }}>
-          Continuer vers le paiement
-        </button>
-      </form>
+      <Link href="/checkout/payment" style={actionLinkStyle}>
+        Continuer vers le paiement
+      </Link>
     </section>
   );
 }

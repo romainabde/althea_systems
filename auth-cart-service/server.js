@@ -11,7 +11,10 @@ const cartRoutes = require('./routes/cartRoutes');
 const app = express();
 app.use(express.json());
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    credentials: true,
+}));
 
 
 app.use('/api/auth', authRoutes);
@@ -22,6 +25,7 @@ app.use('/api/orders', require('./routes/orderRoutes'));
 
 app.use('/api/addresses', require('./routes/addressRoutes'));
 
-app.listen(3000, () => {
-    console.log(`✅ Serveur démarré sur le port 3000`);
+const PORT = Number(process.env.PORT) || 8080;
+app.listen(PORT, () => {
+    console.log(`Serveur auth-cart demarre sur le port ${PORT}`);
 });

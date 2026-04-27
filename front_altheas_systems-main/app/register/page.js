@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { registerUser } from "../../services/authService";
 
 const pageStyle = {
   padding: "1rem",
@@ -46,17 +45,16 @@ export default function RegisterPage() {
 
   const nextPath = searchParams.get("next") || "/checkout/address";
 
-  async function handleSubmit(event) {
+  function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
     const formData = new FormData(event.currentTarget);
-    const fullName = String(formData.get("fullName") || "").trim();
     const email = String(formData.get("email") || "").trim();
     const password = String(formData.get("password") || "").trim();
 
-    if (!fullName || !email || !password) {
-      setError("Nom complet, email et mot de passe sont requis.");
+    if (!email || !password) {
+      setError("Email et mot de passe sont requis.");
       return;
     }
 
@@ -65,17 +63,12 @@ export default function RegisterPage() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
+    if (password.length < 6) {
+      setError("Le mot de passe doit contenir au moins 6 caractères.");
       return;
     }
 
-    try {
-      await registerUser({ fullName, email, password });
-      router.push(`/login?next=${encodeURIComponent(nextPath)}`);
-    } catch (apiError) {
-      setError("Inscription impossible pour le moment.");
-    }
+    router.push(nextPath);
   }
 
   return (
@@ -86,11 +79,6 @@ export default function RegisterPage() {
       </p>
 
       <form onSubmit={handleSubmit} noValidate style={cardStyle}>
-        <label style={{ display: "grid", gap: "0.35rem" }}>
-          Nom complet
-          <input name="fullName" type="text" required style={inputStyle} />
-        </label>
-
         <label style={{ display: "grid", gap: "0.35rem" }}>
           Email
           <input name="email" type="email" required style={inputStyle} />

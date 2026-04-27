@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { getSearchFilters, searchProducts } from "../../services/searchService";
 
 const pageStyle = {
@@ -38,6 +39,7 @@ const inputStyle = {
 };
 
 export default function SearchPage() {
+  const searchParams = useSearchParams();
   const [filters, setFilters] = useState({ facets: { categories: [], priceRanges: [] }, sortOptions: [] });
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
@@ -47,6 +49,11 @@ export default function SearchPage() {
   const [results, setResults] = useState([]);
   const [total, setTotal] = useState(0);
   const [isLoadingResults, setIsLoadingResults] = useState(true);
+
+  useEffect(() => {
+    const queryFromUrl = searchParams.get("query") || "";
+    setQuery(queryFromUrl);
+  }, [searchParams]);
 
   useEffect(() => {
     async function loadFilters() {

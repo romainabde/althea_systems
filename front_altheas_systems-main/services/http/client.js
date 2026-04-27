@@ -1,38 +1,61 @@
 import { API_CONFIG } from "../config";
+import { getAuthToken } from "../authSession";
 
-function buildRequestUrl(endpoint) {
-  if (typeof endpoint !== "string") {
-    throw new Error("httpClient endpoint must be a string");
+function resolveBaseUrl(endpoint) {
+  if (endpoint.startsWith("/api/auth") || endpoint.startsWith("/api/users")) {
+    return API_CONFIG.authBaseUrl;
   }
+  if (
+    endpoint.startsWith("/api/cart") ||
+    endpoint.startsWith("/api/orders") ||
+    endpoint.startsWith("/api/addresses")
+  ) {
+    return API_CONFIG.authBaseUrl;
+  }
+  if (endpoint.startsWith("/api/chat") || endpoint.startsWith("/api/form")) {
+    return API_CONFIG.supportBaseUrl;
+  }
+  if (endpoint.startsWith("/admin")) {
+    return API_CONFIG.adminBaseUrl;
+  }
+  return API_CONFIG.catalogBaseUrl;
+}
+
+export function buildRequestUrl(endpoint) {
   if (endpoint.startsWith("http")) return endpoint;
-  if (endpoint.startsWith("/api/")) return `${API_CONFIG.authCartBaseUrl}${endpoint}`;
-  return `${API_CONFIG.catalogBaseUrl || API_CONFIG.baseUrl}${endpoint}`;
+  const base = resolveBaseUrl(endpoint);
+  return `${base}${endpoint}`;
+}
+
+const BEARER_PREFIX_ENDPOINTS = [
+  "/api/cart",
+  "/api/orders",
+  "/api/addresses",
+  "/api/users",
+];
+
+function shouldAttachBearer(endpoint) {
+  return BEARER_PREFIX_ENDPOINTS.some((prefix) => endpoint.startsWith(prefix));
 }
 
 export async function httpClient(endpoint, options = {}) {
-  const url = buildRequestUrl(endpoint);
-  let response;
-  try {
-    response = await fetch(url, {
-      ...options,
-      headers: {
-        ...API_CONFIG.defaultHeaders,
-        ...(options.headers || {}),
-      },
-      cache: options.cache || "no-store",
-    });
-  } catch (error) {
-    throw new Error(`Network error calling ${url}: ${error?.message || "fetch failed"}`);
+  const token = getAuthToken();
+  const headers = {
+    ...API_CONFIG.defaultHeaders,
+    ...(options.headers || {}),
+  };
+  if (token && shouldAttachBearer(endpoint) && !headers.Authorization) {
+    headers.Authorization = `Bearer ${token}`;
   }
+
+  const response = await fetch(buildRequestUrl(endpoint), {
+    ...options,
+    headers,
+    cache: options.cache || "no-store",
+  });
 
   if (!response.ok) {
-    const error = new Error(`API request failed with status ${response.status} for ${url}`);
-    Object.assign(error, { status: response.status });
-    throw error;
-  }
-
-  if (response.status === 204) {
-    return null;
+    throw new Error(`API request failed with status ${response.status}`);
   }
 
   return response.json();

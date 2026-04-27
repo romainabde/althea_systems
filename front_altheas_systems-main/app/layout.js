@@ -1,11 +1,24 @@
 import Link from "next/link";
+import Image from "next/image";
+import DesktopFooter from "../components/layout/DesktopFooter";
+import ChatWidget from "../components/chat/ChatWidget";
+import HeaderSearchBar from "../components/layout/HeaderSearchBar";
 
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <body>
         <header style={{ padding: "1rem", background: "#003d5c", color: "white" }}>
-          <h2 style={{ margin: 0 }}>Althea Systems</h2>
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
+            <Image
+              src="/images/logo.png"
+              alt="Althea Systems"
+              width={160}
+              height={40}
+              priority
+              style={{ width: "auto", height: "clamp(30px, 5vw, 40px)" }}
+            />
+          </Link>
           <nav style={{ marginTop: "0.75rem", display: "flex", flexWrap: "wrap", gap: "0.75rem 1rem" }}>
             <Link href="/" style={{ color: "white", textDecoration: "none" }}>
               Accueil
@@ -23,13 +36,13 @@ export default function RootLayout({ children }) {
               Compte
             </Link>
           </nav>
+          <HeaderSearchBar />
         </header>
 
         <main style={{ minHeight: "calc(100vh - 170px)" }}>{children}</main>
 
-        <footer style={{ padding: "1rem", background: "#003d5c", color: "white" }}>
-          <p>© 2026 Althea Systems</p>
-        </footer>
+        <DesktopFooter />
+        <ChatWidget />
       </body>
     </html>
   );

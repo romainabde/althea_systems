@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Front Althea - Architecture Front/API
 
-## Getting Started
+## Introduction
 
-First, run the development server:
+Le front est pret pour etre connecte au backend.
+Les appels sont centralises dans la couche `services` pour garder une integration propre et maintenable.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Structure des appels API
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Emplacements
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `services/routes.js`
+- `services/http/client.js`
+- `services/api/*Api.js`
+- `services/*Service.js`
+- `components/*`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Role de chaque couche
 
-## Learn More
+- `services/api/*Api.js` : appels HTTP (ou mocks) vers les endpoints.
+- `services/*Service.js` : logique metier front (orchestration/formatage).
+- `components/*` : UI uniquement (pas d'appel API direct).
+- `services/routes.js` : source unique des routes backend.
 
-To learn more about Next.js, take a look at the following resources:
+## Chatbot flow
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Fichiers
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- UI : `components/chat/ChatWidget.js`
+- Service metier : `services/chatbotService.js`
+- Couche API : `services/api/chatbotApi.js`
 
-## Deploy on Vercel
+### Fonctions exposees
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `startChatSession`
+- `sendChatMessage`
+- `endChatSession`
+- `escalateChatSession`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Correspondance routes backend
+
+- `startChatSession` -> `/chatbot/start`
+- `sendChatMessage` -> `/chatbot/message`
+- `endChatSession` -> `/chatbot/end`
+- `escalateChatSession` -> `/chatbot/escalate`
+
+## Search flow
+
+- `components/layout/HeaderSearchBar.js` redirige vers `/search?query=...`
+- `app/search/page.js` lit la query URL puis alimente le flow de recherche
+- endpoints prevus dans `services/routes.js` :
+  - `/search/products`
+  - `/search/facets`
+  - `/search/sort-options`
+
+## Bonnes pratiques pour brancher le backend
+
+- Ne jamais appeler les API directement dans les composants.
+- Toujours passer par `services/api/*Api.js`, puis `services/*Service.js`.
+- Ajouter toute nouvelle route backend dans `services/routes.js`.
+- Garder la separation UI / logique / appels reseau.
+
+## Exemple de branchement (simple)
+
+Pour remplacer un mock par du reel (ex: chatbot), garder la meme fonction service.
+Seule la partie `if (API_CONFIG.useMocks)` dans `services/api/chatbotApi.js` est a remplacer par l'appel HTTP correspondant.

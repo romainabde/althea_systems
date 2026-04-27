@@ -1,5 +1,6 @@
 const prisma = require('../config/prisma');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_KEY);
 const { sendOrderConfirmation } = require('../utils/emailService');
 
 // --- 1. CRÉATION DE LA COMMANDE (EN ATTENTE) ---

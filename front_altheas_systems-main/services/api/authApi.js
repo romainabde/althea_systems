@@ -1,34 +1,52 @@
+import { persistSession } from "../authSession";
 import { API_CONFIG } from "../config";
-import { httpClient } from "../http/client";
+import { buildRequestUrl } from "../http/client";
 import { API_ROUTES } from "../routes";
-import { buildIdentityHeaders, setAuthToken } from "../auth/session";
 
-export async function login(payload) {
-  if (API_CONFIG.useMocks || API_CONFIG.useMocksByDomain?.auth) {
-    return { message: "Mock login", token: "mock-token", user: { email: payload.email } };
-  }
-
-  const response = await httpClient(API_ROUTES.auth.login, {
+/**
+ * Connexion alignée sur auth-cart-service : body { email, password, rememberMe? }.
+ */
+export async function loginWithCredentials({ email, password, rememberMe }) {
+  const url = buildRequestUrl(API_ROUTES.auth.login);
+  const res = await fetch(url, {
     method: "POST",
-    headers: buildIdentityHeaders(),
-    body: JSON.stringify(payload),
+    headers: { ...API_CONFIG.defaultHeaders },
+    body: JSON.stringify({
+      email,
+      password,
+      rememberMe: !!rememberMe,
+    }),
+    cache: "no-store",
   });
 
-  if (response?.token) {
-    setAuthToken(response.token);
+  let data = {};
+  try {
+    const text = await res.text();
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = {};
   }
 
-  return response;
-}
-
-export async function register(payload) {
-  if (API_CONFIG.useMocks || API_CONFIG.useMocksByDomain?.auth) {
-    return { message: "Mock register" };
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      message:
+        typeof data.message === "string"
+          ? data.message
+          : `Erreur ${res.status}`,
+    };
   }
 
-  return httpClient(API_ROUTES.auth.register, {
-    method: "POST",
-    headers: buildIdentityHeaders(),
-    body: JSON.stringify(payload),
+  if (typeof data.token !== "string") {
+    return { ok: false, message: "Réponse invalide du serveur." };
+  }
+
+  persistSession({
+    token: data.token,
+    user: data.user,
+    rememberMe: !!rememberMe,
   });
+
+  return { ok: true, user: data.user };
 }

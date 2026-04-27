@@ -2,30 +2,32 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { getCart, removeProductFromCart } from "../../services/cartService";
+import { getCart, removeFromCart } from "../../utils/cart";
 
 export default function CartPage() {
-  const [cart, setCart] = useState({ items: [], totals: { total: 0 } });
+  const [cart, setCart] = useState([]);
 
   useEffect(() => {
-    async function loadCart() {
-      const apiCart = await getCart();
-      setCart(apiCart);
-    }
-    loadCart();
+    const storedCart = getCart();
+    console.log("Panier lu dans cart page :", storedCart);
+    setCart(storedCart);
   }, []);
 
-  const handleRemove = async (productId) => {
-    const updated = await removeProductFromCart(productId);
-    setCart(updated);
+  const handleRemove = (productId) => {
+    removeFromCart(productId);
+    setCart(getCart());
   };
-  const total = cart?.totals?.total || 0;
+
+  const total = cart.reduce(
+    (sum, product) => sum + product.price * product.quantity,
+    0
+  );
 
   return (
     <div style={{ padding: "2rem" }}>
       <h1>Panier</h1>
 
-      {cart.items.length === 0 ? (
+      {cart.length === 0 ? (
         <div style={{ marginTop: "1rem" }}>
           <p>Votre panier est vide.</p>
           <Link
@@ -47,7 +49,7 @@ export default function CartPage() {
       ) : (
         <>
           <div style={{ display: "grid", gap: "1rem", marginTop: "2rem" }}>
-            {cart.items.map((product) => (
+            {cart.map((product) => (
               <div
                 key={product.id}
                 style={{

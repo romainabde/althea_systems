@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { loginUser } from "../../services/authService";
+
+import { loginWithCredentials } from "../../services/api/authApi";
 
 const pageStyle = {
   padding: "1rem",
@@ -43,6 +44,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const nextPath = searchParams.get("next") || "/checkout/address";
 
@@ -53,6 +55,7 @@ export default function LoginPage() {
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") || "").trim();
     const password = String(formData.get("password") || "").trim();
+    const rememberMe = formData.get("rememberMe") === "on";
 
     if (!email || !password) {
       setError("Email et mot de passe sont requis.");
@@ -64,11 +67,18 @@ export default function LoginPage() {
       return;
     }
 
+    setSubmitting(true);
     try {
-      await loginUser({ email, password, rememberMe: true });
+      const result = await loginWithCredentials({ email, password, rememberMe });
+      if (!result.ok) {
+        setError(result.message || "Connexion impossible.");
+        return;
+      }
       router.push(nextPath);
-    } catch (apiError) {
-      setError("Connexion impossible. Vérifiez vos identifiants.");
+    } catch {
+      setError("Impossible de joindre le serveur. Réessayez plus tard.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -90,10 +100,31 @@ export default function LoginPage() {
           <input name="password" type="password" required style={inputStyle} />
         </label>
 
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            marginTop: "0.75rem",
+            fontSize: "0.9rem",
+            cursor: "pointer",
+          }}
+        >
+          <input name="rememberMe" type="checkbox" />
+          Se souvenir de moi
+        </label>
+
         {error ? <p style={{ marginTop: "0.75rem", color: "#b91c1c" }}>{error}</p> : null}
 
-        <button type="submit" style={buttonStyle}>
-          Se connecter
+        <button
+          type="submit"
+          style={{
+            ...buttonStyle,
+            ...(submitting ? { opacity: 0.75, cursor: "wait" } : {}),
+          }}
+          disabled={submitting}
+        >
+          {submitting ? "Connexion…" : "Se connecter"}
         </button>
       </form>
 

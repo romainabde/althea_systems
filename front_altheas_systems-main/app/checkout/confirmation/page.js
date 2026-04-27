@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { getCart } from "../../../utils/cart";
 
 const pageStyle = {
   padding: "1rem",
@@ -55,10 +55,11 @@ function buildMockOrderNumber() {
 }
 
 export default function CheckoutConfirmationPage() {
-  const searchParams = useSearchParams();
   const orderNumber = useMemo(() => buildMockOrderNumber(), []);
-  const orderId = searchParams.get("orderId");
-  const transactionId = searchParams.get("tx");
+  const totalPaid = useMemo(() => {
+    const cart = getCart();
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, []);
 
   return (
     <section style={pageStyle}>
@@ -69,14 +70,12 @@ export default function CheckoutConfirmationPage() {
 
       <article style={cardStyle}>
         <p style={{ margin: 0, fontWeight: 700 }}>Numéro de commande</p>
-        <p style={{ margin: "0.35rem 0 0 0", fontSize: "1.05rem" }}>{orderId || orderNumber}</p>
+        <p style={{ margin: "0.35rem 0 0 0", fontSize: "1.05rem" }}>{orderNumber}</p>
       </article>
 
       <article style={cardStyle}>
-        <p style={{ margin: 0, fontWeight: 700 }}>Paiement</p>
-        <p style={{ margin: "0.35rem 0 0 0", color: "#444" }}>
-          Transaction : {transactionId || "En cours de validation"}
-        </p>
+        <p style={{ margin: 0, fontWeight: 700 }}>Résumé rapide</p>
+        <p style={{ margin: "0.35rem 0 0 0", color: "#444" }}>Total payé : {totalPaid} €</p>
       </article>
 
       <Link href="/" style={primaryButtonStyle}>
