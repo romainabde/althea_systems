@@ -6,14 +6,20 @@ import com.althea.catalog.dto.product.ProductWithImagesDto;
 import com.althea.catalog.dto.product.SimilarProductsDto;
 import com.althea.catalog.exception.ResourceNotFoundException;
 import com.althea.catalog.mapper.ProductMapper;
+import com.althea.catalog.util.ProductImagePayloadResolver;
+import com.althea.shared.dto.ProductImageView;
 import com.althea.shared.model.Category;
 import com.althea.shared.model.Product;
 import com.althea.shared.model.ProductImage;
 import com.althea.catalog.repository.ProductImageRepository;
 import com.althea.catalog.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.domain.*;
@@ -28,6 +34,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductImageRepository imageRepository;
     private final ProductMapper productMapper;
+    private final MongoTemplate mongoTemplate;
 
 
     private Sort buildSort(String sort) {
@@ -86,7 +93,9 @@ public class ProductService {
         List<ProductWithImagesDto> result = products.stream()
                 .map(product -> new ProductWithImagesDto(
                         productMapper.toDto(product),
-                        imagesByProductId.getOrDefault(product.getId(), List.of())
+                        toImageViews(
+                                imagesByProductId.getOrDefault(product.getId(), List.of())
+                        )
                 ))
                 .toList();
 
@@ -159,7 +168,73 @@ public class ProductService {
         Product product = getProductById(productId);
         List<ProductImage> images = imageRepository.findByProductId(productId);
 
-        return new ProductWithImagesDto(productMapper.toDto(product), images);
+        return new ProductWithImagesDto(
+                productMapper.toDto(product),
+                toImageViews(images)
+        );
+    }
+
+    /**
+     * Octets bruts + type MIME pour {@code GET /products/{id}/images/{imageId}/raw}.
+     */
+    public ProductImagePayloadResolver.Resolved getImagePayload(int productId, String imageId) {
+        ProductImage img = findImageByIdAndProductId(imageId, productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image introuvable."));
+
+        return resolveImagePayload(img);
+    }
+
+    /**
+     * Octets bruts + type MIME pour {@code GET /images/{imageId}}.
+     */
+    public ProductImagePayloadResolver.Resolved getImagePayload(String imageId) {
+        ProductImage img = findImageById(imageId)
+                .orElseThrow(() -> new ResourceNotFoundException("Image introuvable."));
+
+        return resolveImagePayload(img);
+    }
+
+    private Optional<ProductImage> findImageById(String imageId) {
+        Optional<ProductImage> image = imageRepository.findById(imageId);
+        if (image.isPresent()) {
+            return image;
+        }
+        if (!ObjectId.isValid(imageId)) {
+            return Optional.empty();
+        }
+        Query query = Query.query(Criteria.where("_id").is(new ObjectId(imageId)));
+        return Optional.ofNullable(mongoTemplate.findOne(query, ProductImage.class));
+    }
+
+    private Optional<ProductImage> findImageByIdAndProductId(String imageId, int productId) {
+        Optional<ProductImage> image = imageRepository.findByIdAndProductId(imageId, productId);
+        if (image.isPresent()) {
+            return image;
+        }
+        if (!ObjectId.isValid(imageId)) {
+            return Optional.empty();
+        }
+        Query query = Query.query(
+                Criteria.where("_id").is(new ObjectId(imageId)).and("productId").is(productId)
+        );
+        return Optional.ofNullable(mongoTemplate.findOne(query, ProductImage.class));
+    }
+
+    private ProductImagePayloadResolver.Resolved resolveImagePayload(ProductImage img) {
+        ProductImagePayloadResolver.Resolved resolved = ProductImagePayloadResolver.resolve(img);
+        if (resolved.data() == null || resolved.data().length == 0) {
+            throw new ResourceNotFoundException("Image introuvable ou sans données.");
+        }
+        return resolved;
+    }
+
+    private static List<ProductImageView> toImageViews(List<ProductImage> images) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
+        return images.stream()
+                .map(ProductImageView::fromEntity)
+                .toList();
     }
 
     // Rechercher si un produit est disponible

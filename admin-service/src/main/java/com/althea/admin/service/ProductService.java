@@ -7,6 +7,7 @@ import com.althea.admin.mapper.ProductMapper;
 import com.althea.admin.repository.CategoryRepository;
 import com.althea.admin.repository.ProductImageRepository;
 import com.althea.admin.repository.ProductRepository;
+import com.althea.shared.dto.ProductImageView;
 import com.althea.shared.model.Category;
 import com.althea.shared.model.Product;
 import com.althea.shared.model.ProductImage;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.Base64;
 
 @Service
 @RequiredArgsConstructor
@@ -81,14 +83,55 @@ public class ProductService {
     public ProductWithImagesDto addImage(Integer id, ProductImageCreateRequest request) {
         Product existing = getProductById(id);
 
+        String raw = firstNonBlank(request.getDataBase64(), request.getUrl());
+        if (raw == null || raw.isBlank()) {
+            throw new BadRequestException("Fournir dataBase64 (ou l'ancien champ url) et contentType.");
+        }
+        final byte[] data;
+        try {
+            data = decodeImagePayload(raw);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Image base64 invalide.");
+        }
+        if (data.length == 0) {
+            throw new BadRequestException("Image vide.");
+        }
+        String contentType = request.getContentType() != null
+                ? request.getContentType().trim()
+                : "image/jpeg";
+
         ProductImage image = ProductImage.builder()
                 .productId(existing.getId())
-                .url(request.getUrl())
+                .data(data)
+                .contentType(contentType)
                 .altText(request.getAltText())
+                .url(null)
                 .build();
 
         productImageRepository.save(image);
         return toWithImages(existing);
+    }
+
+    private static String firstNonBlank(String a, String b) {
+        if (a != null && !a.isBlank()) {
+            return a;
+        }
+        if (b != null && !b.isBlank()) {
+            return b;
+        }
+        return null;
+    }
+
+    private static byte[] decodeImagePayload(String raw) {
+        String s = raw.trim();
+        if (s.startsWith("data:")) {
+            int comma = s.indexOf(',');
+            if (comma < 0) {
+                throw new IllegalArgumentException("data-URL");
+            }
+            return Base64.getDecoder().decode(s.substring(comma + 1));
+        }
+        return Base64.getDecoder().decode(s);
     }
 
     @Transactional
@@ -130,7 +173,7 @@ public class ProductService {
         return products.stream()
                 .map(product -> new ProductWithImagesDto(
                         productMapper.toDto(product),
-                        imagesByProductId.getOrDefault(product.getId(), List.of())
+                        toImageViews(imagesByProductId.getOrDefault(product.getId(), List.of()), product.getId())
                 ))
                 .toList();
     }
@@ -138,8 +181,17 @@ public class ProductService {
     private ProductWithImagesDto toWithImages(Product product) {
         return new ProductWithImagesDto(
                 productMapper.toDto(product),
-                productImageRepository.findByProductId(product.getId())
+                toImageViews(productImageRepository.findByProductId(product.getId()), product.getId())
         );
+    }
+
+    private static List<ProductImageView> toImageViews(List<ProductImage> images, int productId) {
+        if (images == null || images.isEmpty()) {
+            return List.of();
+        }
+        return images.stream()
+                .map(image -> ProductImageView.fromEntity(image, productId))
+                .toList();
     }
 
     private Sort buildSort(String sort) {
