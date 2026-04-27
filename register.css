@@ -1,0 +1,326 @@
+/**
+ * Althea Systems — inscription (charte : marine #00334e, turquoise #249997)
+ * À importer depuis page.js : import "./register.css";
+ */
+
+:root {
+  --althea-navy: #00334e;
+  --althea-navy-deep: #001f33;
+  --althea-teal: #249997;
+  --althea-teal-hover: #1d7a78;
+  --althea-teal-soft: rgba(36, 153, 151, 0.12);
+  --althea-bg: #eef5f6;
+  --althea-surface: #ffffff;
+  --althea-text: #1a2f3a;
+  --althea-muted: #5a6f7a;
+  --althea-border: #c5d5dc;
+  --althea-error: #b91c1c;
+  --althea-error-bg: #fef2f2;
+  --althea-success: #0f766e;
+  --althea-success-bg: #ecfdf5;
+  --althea-radius-lg: 16px;
+  --althea-radius-md: 10px;
+  --althea-shadow: 0 4px 24px rgba(0, 51, 78, 0.08);
+  --althea-shadow-lg: 0 20px 50px rgba(0, 51, 78, 0.12);
+  --althea-font: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", sans-serif;
+}
+
+/* ——— Page shell ——— */
+.register-layout {
+  min-height: 100vh;
+  font-family: var(--althea-font);
+  color: var(--althea-text);
+  background: var(--althea-bg);
+  background-image: radial-gradient(
+      ellipse 120% 80% at 100% -20%,
+      var(--althea-teal-soft),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 80% 60% at -10% 100%,
+      rgba(0, 51, 78, 0.06),
+      transparent 50%
+    );
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: clamp(1.25rem, 4vw, 2.5rem) 1rem 3rem;
+  box-sizing: border-box;
+}
+
+.register-brand {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.register-brand a {
+  display: inline-block;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.register-brand a:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.register-brand a:focus-visible {
+  outline: 3px solid var(--althea-teal);
+  outline-offset: 4px;
+}
+
+.register-logo {
+  height: clamp(40px, 8vw, 52px);
+  width: auto;
+  display: block;
+}
+
+.register-page {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.register-page__accent {
+  height: 4px;
+  width: 64px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--althea-teal),
+    var(--althea-navy)
+  );
+  margin-bottom: 1rem;
+}
+
+.register-title {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.65rem, 4vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--althea-navy);
+  line-height: 1.2;
+}
+
+.register-lead {
+  margin: 0 0 1.5rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--althea-muted);
+}
+
+/* ——— Card / form ——— */
+.register-card {
+  background: var(--althea-surface);
+  border-radius: var(--althea-radius-lg);
+  padding: clamp(1.35rem, 3vw, 1.75rem);
+  box-shadow: var(--althea-shadow-lg);
+  border: 1px solid rgba(0, 51, 78, 0.06);
+}
+
+.register-field {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0;
+}
+
+.register-field + .register-field {
+  margin-top: 1rem;
+}
+
+.register-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--althea-navy);
+  letter-spacing: 0.01em;
+}
+
+.register-input {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  font-family: inherit;
+  font-size: 1rem;
+  color: var(--althea-text);
+  background: #fafcfd;
+  border: 1px solid var(--althea-border);
+  border-radius: var(--althea-radius-md);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-sizing: border-box;
+}
+
+.register-input::placeholder {
+  color: #94a3b8;
+}
+
+.register-input:hover {
+  border-color: #9eb8c4;
+  background: var(--althea-surface);
+}
+
+.register-input:focus {
+  outline: none;
+  border-color: var(--althea-teal);
+  background: var(--althea-surface);
+  box-shadow: 0 0 0 3px var(--althea-teal-soft);
+}
+
+.register-input--error {
+  border-color: var(--althea-error);
+  background: var(--althea-error-bg);
+}
+
+.register-input--error:focus {
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15);
+}
+
+.register-hint {
+  font-size: 0.8125rem;
+  color: var(--althea-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.register-error {
+  font-size: 0.875rem;
+  color: var(--althea-error);
+  font-weight: 500;
+  margin: 0;
+}
+
+.register-alert {
+  margin: 1rem 0 0;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.9rem;
+  color: var(--althea-error);
+  background: var(--althea-error-bg);
+  border-radius: var(--althea-radius-md);
+  border: 1px solid rgba(185, 28, 28, 0.2);
+}
+
+.register-success {
+  margin: 1rem 0 0;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--althea-success);
+  background: var(--althea-success-bg);
+  border-radius: var(--althea-radius-md);
+  border: 1px solid rgba(15, 118, 110, 0.25);
+}
+
+.register-submit {
+  margin-top: 1.25rem;
+  width: 100%;
+  padding: 0.9rem 1.15rem;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fff;
+  cursor: pointer;
+  border: none;
+  border-radius: var(--althea-radius-md);
+  background: linear-gradient(
+    165deg,
+    var(--althea-teal) 0%,
+    var(--althea-navy) 100%
+  );
+  box-shadow: 0 4px 14px rgba(0, 51, 78, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.register-submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+  box-shadow: 0 6px 20px rgba(0, 51, 78, 0.3);
+  transform: translateY(-1px);
+}
+
+.register-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.register-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--althea-surface), 0 0 0 6px var(--althea-teal);
+}
+
+.register-submit:disabled {
+  opacity: 0.72;
+  cursor: wait;
+  transform: none;
+}
+
+/* ——— Liens sous le formulaire ——— */
+.register-footer {
+  margin-top: 1.35rem;
+  font-size: 0.95rem;
+  color: var(--althea-muted);
+  line-height: 1.5;
+}
+
+.register-footer p {
+  margin: 0.65rem 0 0;
+}
+
+.register-footer p:first-child {
+  margin-top: 0;
+}
+
+.register-footer a {
+  color: var(--althea-teal);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.register-footer a:hover {
+  color: var(--althea-teal-hover);
+  border-bottom-color: var(--althea-teal-hover);
+}
+
+.register-footer a:focus-visible {
+  outline: 2px solid var(--althea-teal);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ——— Chargement Suspense ——— */
+.register-loading {
+  font-family: var(--althea-font);
+  color: var(--althea-muted);
+  text-align: center;
+  padding: 3rem 1rem;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.register-loading::after {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 36px;
+  margin: 1rem auto 0;
+  border: 3px solid var(--althea-border);
+  border-top-color: var(--althea-teal);
+  border-radius: 50%;
+  animation: register-spin 0.75s linear infinite;
+}
+
+@keyframes register-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .register-submit {
+    transition: none;
+  }
+  .register-loading::after {
+    animation: none;
+    border-top-color: var(--althea-border);
+  }
+}
