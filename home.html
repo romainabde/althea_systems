@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Accueil — Althea Systems</title>
+  <!-- Maquette / description de layout : dossier images/ -->
+</head>
+<body>
+  <a href="#contenu-principal">Aller au contenu</a>
+
+  <header>
+    <div>
+      <a href="home.html" aria-label="Althea Systems — Accueil">
+        <img src="images/logo.PNG" width="180" height="44" alt="Althea Systems">
+      </a>
+      <nav aria-label="Navigation principale">
+        <a href="home.html">Accueil</a>
+        <a href="#categories">Catégories</a>
+        <a href="#top-produits">Top produits</a>
+        <a href="#contact">Contact</a>
+        <!-- CDCF : en mode mobile, le même contenu que le pied de page reste accessible depuis l’en-tête (affichage géré plus tard en CSS) -->
+        <details>
+          <summary>Menu pied de page</summary>
+          <div>
+            <a href="#mentions-legales">Mentions légales</a>
+            <a href="#cgu">Conditions générales d’utilisation</a>
+            <a href="#contact">Contact</a>
+            <p>Réseaux sociaux</p>
+            <ul>
+              <li><a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+              <li><a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+            </ul>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu-principal">
+    <!-- Carrousel : 3 sections (images, textes, liens, ordre modifiable via back-office) -->
+    <section aria-labelledby="carousel-title">
+      <h1 id="carousel-title">Promotions et à la une</h1>
+      <div data-cms="carousel">
+        <article data-cms="carousel-slide" data-order="1" id="carousel-slide-1">
+          <a href="#" data-cms-field="promo-link">
+            <img src="images/carousel-1.jpg" alt="" width="1200" height="514" data-cms-field="image">
+            <p>
+              <strong data-cms-field="title">Offre bienvenue</strong><br>
+              <span data-cms-field="subtitle">Découvrez nos solutions cloud santé — cliquez pour en savoir plus.</span>
+            </p>
+          </a>
+        </article>
+        <article data-cms="carousel-slide" data-order="2" id="carousel-slide-2">
+          <a href="#" data-cms-field="promo-link">
+            <img src="images/carousel-2.jpg" alt="" width="1200" height="514" data-cms-field="image">
+            <p>
+              <strong data-cms-field="title">Nouveautés équipement</strong><br>
+              <span data-cms-field="subtitle">Sélection mise à jour chaque saison.</span>
+            </p>
+          </a>
+        </article>
+        <article data-cms="carousel-slide" data-order="3" id="carousel-slide-3">
+          <a href="#" data-cms-field="promo-link">
+            <img src="images/carousel-3.jpg" alt="" width="1200" height="514" data-cms-field="image">
+            <p>
+              <strong data-cms-field="title">Livraison &amp; conseil</strong><br>
+              <span data-cms-field="subtitle">Une équipe à votre écoute pour les professionnels de santé.</span>
+            </p>
+          </a>
+        </article>
+      </div>
+      <nav aria-label="Accès rapide aux diapositives du carrousel">
+        <ul>
+          <li><a href="#carousel-slide-1">Diapositive 1</a></li>
+          <li><a href="#carousel-slide-2">Diapositive 2</a></li>
+          <li><a href="#carousel-slide-3">Diapositive 3</a></li>
+        </ul>
+      </nav>
+    </section>
+
+    <!-- Texte fixe sous le carrousel (éditable back-office) -->
+    <section data-cms="home-intro" aria-labelledby="intro-heading">
+      <div>
+        <h2 id="intro-heading" data-cms-field="intro-title">Message important</h2>
+        <p data-cms-field="intro-body">
+          Bienvenue sur la boutique Althea Systems. Retrouvez ici nos actualités, nos catégories de produits
+          et une sélection d’articles mis en avant par nos équipes. Ce texte pourra être mis à jour régulièrement
+          depuis le back-office pour communiquer sur les livraisons, les horaires ou les offres spéciales.
+        </p>
+      </div>
+    </section>
+
+    <!-- Grille de catégories (images, noms, ordre — back-office) -->
+    <section id="categories" aria-labelledby="cat-heading">
+      <h2 id="cat-heading">Nos catégories</h2>
+      <div data-cms="category-grid">
+        <a href="#" data-cms="category-item" data-order="1">
+          <img src="images/categorie-consommables.jpg" alt="" width="400" height="400" data-cms-field="image">
+          <span data-cms-field="name">Consommables</span>
+        </a>
+        <a href="#" data-cms="category-item" data-order="2">
+          <img src="images/categorie-diagnostic.jpg" alt="" width="400" height="400" data-cms-field="image">
+          <span data-cms-field="name">Diagnostic</span>
+        </a>
+        <a href="#" data-cms="category-item" data-order="3">
+          <img src="images/categorie-mobilier.jpg" alt="" width="400" height="400" data-cms-field="image">
+          <span data-cms-field="name">Mobilier médical</span>
+        </a>
+        <a href="#" data-cms="category-item" data-order="4">
+          <img src="images/categorie-protection.jpg" alt="" width="400" height="400" data-cms-field="image">
+          <span data-cms-field="name">Protection &amp; hygiène</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- Les Top Produits du moment (sélection et ordre — back-office) -->
+    <section id="top-produits" aria-labelledby="top-heading">
+      <h2 id="top-heading">Les Top Produits du moment</h2>
+      <div data-cms="featured-products">
+        <a href="#" data-cms="product-item" data-order="1">
+          <img src="images/produit-1.jpg" alt="" width="300" height="300" data-cms-field="image">
+          <span data-cms-field="name">Produit vedette A</span>
+        </a>
+        <a href="#" data-cms="product-item" data-order="2">
+          <img src="images/produit-2.jpg" alt="" width="300" height="300" data-cms-field="image">
+          <span data-cms-field="name">Produit vedette B</span>
+        </a>
+        <a href="#" data-cms="product-item" data-order="3">
+          <img src="images/produit-3.jpg" alt="" width="300" height="300" data-cms-field="image">
+          <span data-cms-field="name">Produit vedette C</span>
+        </a>
+        <a href="#" data-cms="product-item" data-order="4">
+          <img src="images/produit-4.jpg" alt="" width="300" height="300" data-cms-field="image">
+          <span data-cms-field="name">Produit vedette D</span>
+        </a>
+        <a href="#" data-cms="product-item" data-order="5">
+          <img src="images/produit-5.jpg" alt="" width="300" height="300" data-cms-field="image">
+          <span data-cms-field="name">Produit vedette E</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Pied de page : mentions légales, CGU, contact, réseaux (présentation desktop / mobile via CSS plus tard) -->
+  <footer>
+    <div>
+      <nav aria-label="Liens pied de page">
+        <a id="mentions-legales" href="mentions-legales.html">Mentions légales</a>
+        <a id="cgu" href="cgu.html">Conditions générales d’utilisation</a>
+        <a id="contact" href="contact.html">Contact</a>
+      </nav>
+      <nav aria-label="Réseaux sociaux">
+        <a href="https://www.linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a>
+        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
+      </nav>
+      <p>
+        © <span data-cms-field="footer-year">2026</span> Althea Systems. Tous droits réservés.
+      </p>
+      <p>Sur petit écran, utilisez « Menu pied de page » dans l’en-tête pour accéder aux mêmes liens.</p>
+    </div>
+  </footer>
+</body>
+</html>
