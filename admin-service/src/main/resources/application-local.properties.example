@@ -1,0 +1,8 @@
+# Copier ce fichier vers application-local.properties (non versionne).
+# Atlas : Cluster > Connect > Drivers > copier l'URI SRV.
+# Remplace <password> par le mot de passe du user DB ; base : althea_systems_db
+#
+# Exemple de forme :
+# spring.mongodb.uri=mongodb+srv://romainabdelouahed_db_user:TON_MDP@altheasystems.xxxxx.mongodb.net/althea_systems_db?retryWrites=true&w=majority&appName=altheasystems
+#
+spring.mongodb.uri=

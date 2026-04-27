@@ -1,0 +1,65 @@
+.footer {
+  display: none;
+  background: #003d5c;
+  color: #eaf3f8;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.inner {
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 1.25rem 1rem;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.brand {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.copyright {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.88rem;
+  color: #d5e7ef;
+}
+
+.links {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.socials {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.socialLabel {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.socialLinks {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.link {
+  color: #00a8b5;
+  text-decoration: none;
+  width: fit-content;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: #33bfc9;
+}
+
+@media (min-width: 1024px) {
+  .footer {
+    display: block;
+  }
+}
