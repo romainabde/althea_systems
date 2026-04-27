@@ -7,7 +7,6 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "db:generate": "node prisma-generate.cjs",
-    "db:migrate": "prisma migrate deploy --schema ../auth-cart-service/prisma/schema.prisma",
     "db:push": "node prisma-push.cjs"
   },
   "keywords": [],

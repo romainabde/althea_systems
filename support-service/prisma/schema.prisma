@@ -1,5 +1,4 @@
-// Schéma unique pour PostgreSQL (même base que admin/catalog) : auth, panier, commandes,
-// messages contact (JPA admin) et chat support. Migrations : uniquement depuis auth-cart-service.
+// Copie de réf. — client généré depuis ../auth-cart-service/prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"

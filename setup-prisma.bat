@@ -28,7 +28,7 @@ if errorlevel 1 goto err
 
 echo.
 echo OK : tables synchronisees, clients Prisma generes.
-echo Si erreur de connexion : demarre PostgreSQL et verifie DATABASE_URL dans les fichiers .env
+echo Si erreur de connexion : verifie DATABASE_URL (Neon) dans auth-cart-service et support-service .env
 exit /b 0
 
 :err

@@ -47,6 +47,7 @@ export const API_ROUTES = {
   auth: {
     login: "/api/auth/login",
     register: "/api/auth/register",
+    confirmEmail: "/api/auth/confirm-email",
     logout: "/api/auth/logout",
     forgotPassword: "/api/auth/forgot-password",
     resetPassword: (token) => `/api/auth/reset-password/${token}`,

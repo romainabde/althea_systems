@@ -2,75 +2,149 @@ const prisma = require('../config/prisma');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+const MSG_PASSWORD_WEAK =
+    "Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial.";
+
+const MSG_INSCRIPTION_REUSSIE =
+    "Inscription réussie ! Veuillez vérifier votre boîte e-mail pour confirmer votre compte.";
+
+function isPasswordStrongEnough(password) {
+    if (typeof password !== 'string' || password.length < 8) return false;
+    if (!/[a-z]/.test(password)) return false;
+    if (!/[A-Z]/.test(password)) return false;
+    if (!/\d/.test(password)) return false;
+    if (!/[^A-Za-z0-9]/.test(password)) return false;
+    return true;
+}
+
+function isFullNamePlausible(fullName) {
+    const t = String(fullName || '').trim();
+    if (t.length < 3) return false;
+    const parts = t.split(/\s+/).filter(Boolean);
+    if (parts.length < 2) return false;
+    return true;
+}
+
+function frontendBaseUrl() {
+    return (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+}
+
 // --- 1. L'INSCRIPTION ---
 exports.register = async (req, res) => {
     try {
         const { fullName, email, password } = req.body;
 
-        if (!fullName || !email || !password) return res.status(400).json({ message: "Tous les champs sont obligatoires." });
+        const fullNameTrim = fullName != null ? String(fullName).trim() : '';
+        const emailClean = email != null ? String(email).toLowerCase().trim() : '';
+        const passwordRaw = password != null ? String(password) : '';
 
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) return res.status(400).json({ message: "Le format de l'adresse e-mail est invalide." });
-
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            return res.status(400).json({ message: "Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule, un chiffre et un caractère spécial." });
+        if (!fullNameTrim || !emailClean || !passwordRaw.trim()) {
+            return res.status(400).json({ message: "Tous les champs sont obligatoires." });
         }
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (!isFullNamePlausible(fullNameTrim)) {
+            return res.status(400).json({
+                message: "Indiquez votre prénom et votre nom (deux mots minimum, ex. : Jean Dupont).",
+            });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailClean)) {
+            return res.status(400).json({ message: "Le format de l'adresse e-mail est invalide." });
+        }
+
+        if (!isPasswordStrongEnough(passwordRaw)) {
+            return res.status(400).json({ message: MSG_PASSWORD_WEAK });
+        }
+
+        const existingUser = await prisma.user.findUnique({ where: { email: emailClean } });
         if (existingUser) return res.status(400).json({ message: "Cet email est déjà utilisé." });
 
-        const passwordHash = await bcrypt.hash(password, 10);
+        const passwordHash = await bcrypt.hash(passwordRaw, 10);
 
-        // Création de l'utilisateur (isEmailConfirmed est false par défaut)
         const newUser = await prisma.user.create({
-            data: { fullName, email, passwordHash }
+            data: { fullName: fullNameTrim, email: emailClean, passwordHash }
         });
 
-        // CRÉATION DU LIEN DE CONFIRMATION (Valide 24h)
         const validationToken = jwt.sign(
-            { userId: newUser.id }, 
-            process.env.JWT_SECRET, 
+            { userId: newUser.id },
+            process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
-        const confirmationLink = `http://localhost:3000/api/auth/verify-email/${validationToken}`;
+        const confirmationPath = `${frontendBaseUrl()}/auth/confirm?token=${encodeURIComponent(validationToken)}`;
 
-        // SIMULATION D'ENVOI D'E-MAIL (Pour éviter le pare-feu Worldline)
+        // SIMULATION D'ENVOI D'E-MAIL
         console.log("\n=========================================");
         console.log("📧 NOUVEL E-MAIL À ENVOYER À :", newUser.email);
-        console.log("Cliquez sur ce lien pour valider votre compte :");
-        console.log(confirmationLink);
+        console.log("Lien de confirmation (page Althea) :");
+        console.log(confirmationPath);
         console.log("=========================================\n");
 
-        res.status(201).json({
-            message: "Inscription réussie ! Veuillez vérifier votre boîte e-mail pour confirmer votre compte.",
-        });
-
+        res.status(201).json({ message: MSG_INSCRIPTION_REUSSIE });
     } catch (error) {
         console.error("🚨 ERREUR INSCRIPTION :", error);
         res.status(500).json({ message: "Erreur serveur lors de l'inscription." });
     }
 };
 
-// --- 2. LA VALIDATION DU LIEN ---
+// --- 1b. Confirmer l’e-mail + session (clic sur le lien → front → POST ici) ---
+exports.confirmEmail = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token || typeof token !== 'string') {
+            return res.status(400).json({ message: "Le jeton de confirmation est requis." });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+        if (!user) {
+            return res.status(404).json({ message: "Aucun compte ne correspond à ce lien." });
+        }
+
+        if (user.isEmailConfirmed) {
+            const sessionToken = jwt.sign(
+                { userId: user.id, email: user.email },
+                process.env.JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+            return res.status(200).json({
+                message: "Votre compte est déjà confirmé. Vous êtes connecté.",
+                token: sessionToken,
+                user: { id: user.id, fullName: user.fullName, email: user.email },
+            });
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { isEmailConfirmed: true },
+        });
+
+        const sessionToken = jwt.sign(
+            { userId: user.id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.status(200).json({
+            message: "Votre compte est confirmé. Bienvenue sur Althea Systems !",
+            token: sessionToken,
+            user: { id: user.id, fullName: user.fullName, email: user.email },
+        });
+    } catch (error) {
+        console.error("🚨 ERREUR CONFIRMATION EMAIL :", error);
+        res.status(400).json({ message: "Le lien de confirmation est invalide ou a expiré." });
+    }
+};
+
+// --- 1c. Ancien lien API / e-mails : redirige vers le front (confirm + auto-login) ---
 exports.verifyEmail = async (req, res) => {
     try {
         const { token } = req.params;
-
-        // Décrypter le token pour retrouver l'ID de l'utilisateur
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
-        // Mettre à jour l'utilisateur en base de données
-        await prisma.user.update({
-            where: { id: decoded.userId },
-            data: { isEmailConfirmed: true }
-        });
-
-        res.status(200).send("<h1>✅ Compte activé avec succès !</h1><p>Vous pouvez maintenant vous connecter à Althea Systems.</p>");
-
+        const to = `${frontendBaseUrl()}/auth/confirm?token=${encodeURIComponent(token)}`;
+        return res.redirect(302, to);
     } catch (error) {
-        console.error("🚨 ERREUR VALIDATION EMAIL :", error);
-        res.status(400).send("<h1>❌ Le lien est invalide ou a expiré.</h1>");
+        console.error("🚨 ERREUR REDIRECT VERIFY :", error);
+        res.status(400).send("<h1>❌ Lien invalide.</h1>");
     }
 };
 
@@ -248,12 +322,8 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ message: "Le nouveau mot de passe est obligatoire." });
         }
 
-        // A. Vérification de la force du mot de passe
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            return res.status(400).json({ 
-                message: "Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial." 
-            });
+        if (!isPasswordStrongEnough(password)) {
+            return res.status(400).json({ message: MSG_PASSWORD_WEAK });
         }
 
         // B. Vérifier si le token est valide et non expiré
@@ -306,16 +376,15 @@ exports.resendConfirmation = async (req, res) => {
 
         // 3. Générer un nouveau token (Valide 24h)
         const validationToken = jwt.sign(
-            { userId: user.id }, 
-            process.env.JWT_SECRET, 
+            { userId: user.id },
+            process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
-        const confirmationLink = `http://localhost:3000/api/auth/verify-email/${validationToken}`;
+        const confirmationPath = `${frontendBaseUrl()}/auth/confirm?token=${encodeURIComponent(validationToken)}`;
 
-        // 4. Simulation d'envoi d'e-mail (console.log)
         console.log("\n=========================================");
         console.log("📧 RENVOI DU LIEN DE CONFIRMATION À :", user.email);
-        console.log("Nouveau lien :", confirmationLink);
+        console.log("Nouveau lien :", confirmationPath);
         console.log("=========================================\n");
 
         res.status(200).json({
