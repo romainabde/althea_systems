@@ -1,13 +1,22 @@
-import { fetchAllProducts, fetchProductById, fetchSimilarProducts } from "./api/catalogApi";
+import { mockCatalogData } from './mocks/catalog.mock';
 
-export async function getProductById(productId) {
-  return fetchProductById(productId);
+// Récupérer tous les produits (on parcourt toutes les catégories du catalogue)
+export async function getProducts() {
+  let allProducts = [];
+  
+  // On boucle sur chaque catégorie (Imagerie, Chirurgie...) pour extraire leurs produits
+  for (const categoryKey in mockCatalogData) {
+    const category = mockCatalogData[categoryKey];
+    if (category.products) {
+      allProducts = [...allProducts, ...category.products];
+    }
+  }
+  
+  return allProducts;
 }
 
-export async function getAllProducts() {
-  return fetchAllProducts();
-}
-
-export async function getSimilarProducts(productId) {
-  return fetchSimilarProducts(productId);
+// Optionnel : Récupérer un seul produit par son ID
+export async function getProductById(id) {
+  const products = await getProducts();
+  return products.find(product => product.id === id);
 }
