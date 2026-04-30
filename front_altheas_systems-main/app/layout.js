@@ -44,7 +44,10 @@ export default function RootLayout({ children }) {
             padding: "1rem 2rem", 
             background: "#003d5c", 
             color: "white",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            position: "sticky", 
+            top: 0, 
+            zIndex: 1000
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
               <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>

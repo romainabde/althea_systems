@@ -7,39 +7,94 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const carouselData = mockHomeData.carousel || [];
 
+  // 💡 NOUVEAU : Fonctions pour passer à la slide suivante ou précédente
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev === carouselData.length - 1 ? 0 : prev + 1));
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? carouselData.length - 1 : prev - 1));
+  };
+
+  // Le timer automatique qui utilise maintenant la fonction nextSlide
   useEffect(() => {
     if (carouselData.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev === carouselData.length - 1 ? 0 : prev + 1));
-    }, 5000);
+    const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
   }, [carouselData.length]);
 
   return (
     <main style={{ fontFamily: 'sans-serif' }}>
       
-      {/* 🎠 CARROUSEL DYNAMIQUE */}
+      {/* 🎠 CARROUSEL DYNAMIQUE (Mis à jour avec flèches et liens) */}
       <section style={{ position: "relative", height: "500px", overflow: "hidden", backgroundColor: "#0f172a" }}>
         {carouselData.map((slide, index) => (
           <div 
             key={slide.id}
             style={{
               position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
-              backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.4)), url(${slide.imageUrl})`,
-              backgroundSize: "cover", backgroundPosition: "center",
-              opacity: currentSlide === index ? 1 : 0, transition: "opacity 0.8s ease-in-out",
-              display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", color: "white"
+              opacity: currentSlide === index ? 1 : 0, 
+              transition: "opacity 0.8s ease-in-out",
+              zIndex: currentSlide === index ? 1 : 0 // Assure que la slide active est au premier plan pour les clics
             }}
           >
-            <h1 style={{ fontSize: "3.5rem", fontWeight: "bold", marginBottom: "15px" }}>{slide.title}</h1>
-            <p style={{ fontSize: "1.2rem", marginBottom: "30px", maxWidth: "600px" }}>{slide.subtitle}</p>
-            <Link href={slide.link}>
-              <button style={{ backgroundColor: "#2563eb", color: "white", padding: "15px 30px", fontSize: "1.1rem", fontWeight: "bold", borderRadius: "8px", border: "none", cursor: "pointer" }}>
-                {slide.buttonText}
-              </button>
+            {/* L'IMAGE DE FOND CLIQUABLE */}
+            <Link href={slide.link} style={{ display: "block", width: "100%", height: "100%" }}>
+              <div style={{
+                width: "100%", height: "100%",
+                backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.4)), url(${slide.imageUrl})`,
+                backgroundSize: "cover", backgroundPosition: "center",
+                cursor: "pointer"
+              }}></div>
             </Link>
+
+            {/* LE TEXTE PAR DESSUS */}
+            <div style={{
+              position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
+              display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center", color: "white",
+              pointerEvents: "none" // 💡 Permet aux clics de traverser le texte pour atteindre l'image en dessous
+            }}>
+              <h1 style={{ fontSize: "3.5rem", fontWeight: "bold", marginBottom: "15px", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>{slide.title}</h1>
+              <p style={{ fontSize: "1.2rem", marginBottom: "30px", maxWidth: "600px", textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>{slide.subtitle}</p>
+              
+              <Link href={slide.link} style={{ pointerEvents: "auto" }}>
+                <button style={{ backgroundColor: "#2563eb", color: "white", padding: "15px 30px", fontSize: "1.1rem", fontWeight: "bold", borderRadius: "8px", border: "none", cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.2)" }}>
+                  {slide.buttonText}
+                </button>
+              </Link>
+            </div>
           </div>
         ))}
+
+        {/* ⬅️ FLÈCHE GAUCHE */}
+        <button 
+          onClick={prevSlide}
+          style={{ position: "absolute", top: "50%", left: "20px", transform: "translateY(-50%)", backgroundColor: "rgba(255,255,255,0.2)", color: "white", border: "none", width: "50px", height: "50px", borderRadius: "50%", fontSize: "1.5rem", cursor: "pointer", backdropFilter: "blur(5px)", transition: "background 0.3s", zIndex: 10 }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.4)"}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)"}
+        >
+          ❮
+        </button>
+
+        {/* ➡️ FLÈCHE DROITE */}
+        <button 
+          onClick={nextSlide}
+          style={{ position: "absolute", top: "50%", right: "20px", transform: "translateY(-50%)", backgroundColor: "rgba(255,255,255,0.2)", color: "white", border: "none", width: "50px", height: "50px", borderRadius: "50%", fontSize: "1.5rem", cursor: "pointer", backdropFilter: "blur(5px)", transition: "background 0.3s", zIndex: 10 }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.4)"}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)"}
+        >
+          ❯
+        </button>
+
+        {/* ⏺️ PETITS POINTS EN BAS */}
+        <div style={{ position: "absolute", bottom: "20px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "10px", zIndex: 10 }}>
+          {carouselData.map((_, index) => (
+            <div key={index} 
+              onClick={() => setCurrentSlide(index)}
+              style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: currentSlide === index ? "white" : "rgba(255,255,255,0.4)", cursor: "pointer", transition: "all 0.3s" }}
+            />
+          ))}
+        </div>
       </section>
 
       {/* 📝 TEXTE DE BIENVENUE FIXE */}
@@ -89,7 +144,7 @@ export default function HomePage() {
                   position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 2,
                   backgroundColor: "rgba(15, 23, 42, 0.4)",
                   display: "flex", alignItems: "flex-end", padding: "25px",
-                  boxSizing: "border-box" /* 👈 VOILÀ LA MAGIE QUI RÉPARE TOUT ! */
+                  boxSizing: "border-box"
                 }}>
                   <h3 style={{ color: "white", fontSize: "1.5rem", fontWeight: "bold", margin: 0, textShadow: "0 2px 4px rgba(0,0,0,0.8)" }}>
                     {category.name} →
