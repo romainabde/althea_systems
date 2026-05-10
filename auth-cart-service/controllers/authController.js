@@ -1,4 +1,3 @@
-const emailService = require('../utils/emailService');
 const prisma = require('../config/prisma'); 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -72,7 +71,6 @@ exports.register = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
-        await emailService.sendConfirmationEmail(newUser.email, validationToken);
         const confirmationPath = `${frontendBaseUrl()}/auth/confirm?token=${encodeURIComponent(validationToken)}`;
 
         // SIMULATION D'ENVOI D'E-MAIL

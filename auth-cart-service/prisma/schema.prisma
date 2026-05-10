@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Cart {
@@ -101,10 +101,10 @@ model ContactMessage {
   fullName        String    @map("full_name")
   email           String
   subject         String
-  message         String    @db.Text
+  message         String    
   status          String    @default("NEW")
   createdAt       DateTime  @default(now()) @map("created_at")
-  responseMessage String?   @map("response_message") @db.Text
+  responseMessage String?   @map("response_message")
   respondedBy     String?   @map("responded_by")
   respondedAt     DateTime? @map("responded_at")
 
@@ -126,7 +126,7 @@ model ChatMessage {
   sessionId Int         @map("session_id")
   session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sender    String
-  text      String      @db.Text
+  text      String     
   createdAt DateTime    @default(now()) @map("created_at")
 
   @@map("chat_message")

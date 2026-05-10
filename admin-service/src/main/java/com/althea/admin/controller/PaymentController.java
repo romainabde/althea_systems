@@ -12,6 +12,11 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
+    @GetMapping
+    public ResponseEntity<?> getAll() {
+        return ResponseEntity.ok(paymentService.findAll());
+    }
+
     @GetMapping("/{paymentId}")
     public ResponseEntity<?> getById(@PathVariable Integer paymentId) {
         return ResponseEntity.ok(paymentService.findById(paymentId));

@@ -17,9 +17,6 @@ export const API_ROUTES = {
   products: {
     list: "/products",
     byId: (productId) => `/products/${productId}`,
-    /** Binaire image (catalog) */
-    imageRaw: (productId, imageId) =>
-      `/products/${productId}/images/${imageId}/raw`,
     images: (productId) => `/products/${productId}/images`,
     availability: (productId) => `/products/${productId}/availability`,
     similar: (productId) => `/products/${productId}/similar`,

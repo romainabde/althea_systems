@@ -1,43 +1,42 @@
 const nodemailer = require('nodemailer');
 
-exports.sendConfirmationEmail = async (email, token) => {
-    // Le lien sur lequel l'utilisateur devra cliquer
-    const confirmationUrl = `http://localhost:3000/api/auth/verify-email/${token}`;
-    
-    console.log("📨 Tentative d'envoi d'e-mail de confirmation à :", email);
-
-    // On configure le "facteur" (transporteur) avec les infos de ton .env
+const sendOrderConfirmation = async (userEmail, order) => {
+    // 1. Configuration du transporteur (ex: Gmail, Mailtrap, etc.)
+    // Pour tes tests, je te conseille "Mailtrap" (c'est gratuit et ça simule une boîte mail)
     const transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
-        port: parseInt(process.env.EMAIL_PORT),
+        port: process.env.EMAIL_PORT,
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
+            pass: process.env.EMAIL_PASS,
         },
-        connectionTimeout: 5000 // On n'attend pas plus de 5 secondes
     });
 
+    // 2. Préparation du contenu de l'e-mail
+    const mailOptions = {
+        from: '"Althea Systems" <noreply@althea.com>',
+        to: userEmail,
+        subject: `Confirmation de votre commande #${order.id}`,
+        html: `
+            <h1>Merci pour votre achat !</h1>
+            <p>Votre commande <strong>#${order.id}</strong> a été validée avec succès.</p>
+            <p><strong>Montant total :</strong> ${order.totalAmount} €</p>
+            <hr>
+            <h3>Détails de la commande :</h3>
+            <ul>
+                ${order.items.map(item => `<li>${item.name} (x${item.quantity}) - ${item.price} €</li>`).join('')}
+            </ul>
+            <p>Elle sera expédiée très prochainement.</p>
+        `,
+    };
+
+    // 3. Envoi
     try {
-        // Tentative d'envoi réel via Mailtrap
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM,
-            to: email,
-            subject: 'Bienvenue chez Althea Systems - Confirmez votre compte',
-            html: `
-                <div style="font-family: Arial, sans-serif; border: 1px solid #ddd; padding: 20px;">
-                    <h2 style="color: #2c3e50;">Bienvenue !</h2>
-                    <p>Merci de vous être inscrit. Cliquez sur le bouton ci-dessous pour activer votre compte :</p>
-                    <a href="${confirmationUrl}" style="background-color: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                        Confirmer mon compte
-                    </a>
-                    <p><br>Ou copiez ce lien dans votre navigateur : ${confirmationUrl}</p>
-                </div>
-            `
-        });
-        console.log("✅ E-mail envoyé avec succès dans Mailtrap !");
+        await transporter.sendMail(mailOptions);
+        console.log("✅ E-mail de confirmation envoyé à :", userEmail);
     } catch (error) {
-        // Si ton pare-feu bloque le port SMTP, on affiche le lien dans la console
-        console.warn("⚠️ Connexion SMTP bloquée. Utilisation du Mode Démo.");
-        console.log("🔗 LIEN DE VALIDATION GÉNÉRÉ :", confirmationUrl);
+        console.error("❌ Erreur envoi e-mail :", error);
     }
 };
+
+module.exports = { sendOrderConfirmation };

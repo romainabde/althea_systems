@@ -1,42 +1,77 @@
-export const homeMock = {
-  heroSlides: [
+export const mockHomeData = {
+  welcomeMessage: {
+    title: "Bienvenue chez Althea Systems",
+    content: "Votre partenaire de confiance pour l'équipement médical de pointe. Depuis plus de 15 ans, nous accompagnons les hôpitaux, cliniques et cabinets privés en fournissant des solutions d'imagerie, de chirurgie et de monitorage fiables et innovantes."
+  },
+  carousel: [
     {
-      id: 1,
-      title: "Solutions médicales innovantes",
-      subtitle: "Découvrez nos équipements de pointe",
-      image: "/images/slide-1.jpg",
-      link: "/categories/1",
+      id: "slide-1",
+      title: "Équipement d'Imagerie de Pointe",
+      subtitle: "Des diagnostics précis grâce à notre nouvelle gamme de scanners IRM et d'échographes.",
+      imageUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200",
+      buttonText: "Découvrir l'imagerie",
+      link: "/products?category=Imagerie"
     },
     {
-      id: 2,
-      title: "Performance et fiabilité",
-      subtitle: "Des produits pensés pour les professionnels de santé",
-      image: "/images/slide-2.jpg",
-      link: "/categories/2",
+      id: "slide-2",
+      title: "Matériel de Bloc Opératoire",
+      subtitle: "Sécurité et ergonomie pour vos interventions chirurgicales les plus complexes.",
+      imageUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=1200",
+      buttonText: "Voir les équipements",
+      link: "/products?category=Chirurgie"
     },
     {
-      id: 3,
-      title: "Top produits du moment",
-      subtitle: "Retrouvez notre sélection phare",
-      image: "/images/slide-3.jpg",
-      link: "/search",
-    },
+      id: "slide-3",
+      title: "Monitorage Patient Avancé",
+      subtitle: "Surveillez les constantes vitales avec une fiabilité inégalée.",
+      imageUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200",
+      buttonText: "Voir les moniteurs",
+      link: "/products?category=Monitorage"
+    }
   ],
   categories: [
-    { id: 1, name: "Imagerie", image: "/images/cat-imagerie.jpg" },
-    { id: 2, name: "Chirurgie", image: "/images/cat-chirurgie.jpg" },
-    { id: 3, name: "Monitoring", image: "/images/cat-monitoring.jpg" },
-    { id: 4, name: "Mobilier", image: "/images/cat-mobilier.jpg" },
+    {
+      id: "cat-1",
+      name: "Imagerie Médicale",
+      imageUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=600",
+      link: "/products?category=Imagerie",
+      order: 1
+    },
+    {
+      id: "cat-2",
+      name: "Chirurgie & Bloc",
+      imageUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=600",
+      link: "/products?category=Chirurgie",
+      order: 2
+    },
+    {
+      id: "cat-3",
+      name: "Monitorage",
+      imageUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=600",
+      link: "/products?category=Monitorage",
+      order: 3
+    }
   ],
   topProducts: [
-    { id: 101, name: "Scanner médical", price: 1200, image: "/images/product-1.jpg" },
-    { id: 201, name: "Laser chirurgical", price: 950, image: "/images/product-2.jpg" },
-    { id: 301, name: "Moniteur patient", price: 700, image: "/images/product-3.jpg" },
-    { id: 401, name: "Table d’examen", price: 450, image: "/images/product-4.jpg" },
-  ],
-  footer: {
-    contact: "Contact",
-    legal: "Mentions légales",
-    cgu: "CGU",
-  },
+    { 
+      id: "top-1", 
+      name: "Scanner IRM 3 Tesla", 
+      imageUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=400" 
+    },
+    { 
+      id: "top-2", 
+      name: "Échographe Portable", 
+      imageUrl: "https://images.unsplash.com/photo-1559757175-5700dde675bc?q=80&w=400" 
+    },
+    { 
+      id: "top-3", 
+      name: "Moniteur Multiparamétrique", 
+      imageUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=400" 
+    },
+    { 
+      id: "top-4", 
+      name: "Table d'opération", 
+      imageUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=400" 
+    }
+  ]
 };

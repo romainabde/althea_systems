@@ -8,9 +8,11 @@ import com.althea.admin.repository.PaymentRepository;
 import com.althea.shared.model.Payment;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +20,13 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentMapper paymentMapper;
+
+    public List<PaymentDto> findAll() {
+        return paymentRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(paymentMapper::toDto)
+                .toList();
+    }
 
     public PaymentDto findById(Integer paymentId) {
         return paymentMapper.toDto(getPaymentById(paymentId));

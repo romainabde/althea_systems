@@ -55,8 +55,32 @@ export async function httpClient(endpoint, options = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(`API request failed with status ${response.status}`);
+    let serverMessage = "";
+    try {
+      const errBody = await response.clone().json();
+      serverMessage =
+        errBody?.message || errBody?.error || JSON.stringify(errBody);
+    } catch {
+      try {
+        serverMessage = await response.text();
+      } catch {
+        // ignore
+      }
+    }
+    const error = new Error(
+      `API ${response.status}${serverMessage ? ` – ${serverMessage}` : ""}`
+    );
+    error.status = response.status;
+    error.body = serverMessage;
+    throw error;
   }
 
-  return response.json();
+  if (response.status === 204) return null;
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }

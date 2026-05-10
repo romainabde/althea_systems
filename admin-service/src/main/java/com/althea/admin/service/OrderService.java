@@ -28,8 +28,13 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class OrderService {
 
+    // Aligné avec le défaut Prisma de auth-cart-service ("PENDING") et
+    // les statuts utilisés par le front backoffice. On accepte aussi les
+    // anciens libellés FR pour rétro-compatibilité.
     private static final Set<String> ALLOWED_STATUSES = Set.of(
-            "ACTIVE", "TERMINEE", "ANNULEE", "COMPLETED", "CANCELED", "CANCELLED"
+            "PENDING", "PROCESSING", "SHIPPED", "DELIVERED",
+            "CANCELLED", "CANCELED", "REFUNDED",
+            "ACTIVE", "TERMINEE", "ANNULEE", "COMPLETED"
     );
 
     private final OrderRepository orderRepository;
@@ -56,7 +61,9 @@ public class OrderService {
 
         String normalizedStatus = request.getStatus().toUpperCase();
         if (!ALLOWED_STATUSES.contains(normalizedStatus)) {
-            throw new BadRequestException("Statut invalide. Valeurs autorisées: ACTIVE, TERMINEE, ANNULEE.");
+            throw new BadRequestException(
+                    "Statut invalide. Valeurs autorisées: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED."
+            );
         }
 
         order.setStatus(normalizedStatus);
