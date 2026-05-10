@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { mockHomeData } from "../services/mocks/home.mock";
+import { mockHomeData } from "../services/mocks/catalog.mock";
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
