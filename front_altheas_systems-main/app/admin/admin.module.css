@@ -1,0 +1,598 @@
+/* ============================================================================
+   Backoffice Admin – styles
+   ----------------------------------------------------------------------------
+   Charte couleurs reprise du front : bleu foncé #003d5c, accent #00a8b5.
+   ============================================================================ */
+
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 200px);
+  background: #f5f7fa;
+  color: #0f172a;
+}
+
+/* ----------------------------- Sidebar ---------------------------------- */
+
+.sidebar {
+  background: #003d5c;
+  color: #ffffff;
+  padding: 1.25rem 0;
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebarHeader {
+  padding: 0 1.25rem 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0.5rem;
+}
+
+.sidebarTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #d4f4f7;
+}
+
+.sidebarSubtitle {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.sidebarSection {
+  padding: 0.75rem 1.25rem 0.35rem 1.25rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.sidebarItem {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  text-align: left;
+  font-size: 0.92rem;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sidebarItem:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebarItemActive {
+  background: rgba(0, 168, 181, 0.18);
+  color: #ffffff;
+  border-left-color: #00a8b5;
+  font-weight: 600;
+}
+
+.sidebarIcon {
+  font-size: 1.05rem;
+  width: 1.2rem;
+  text-align: center;
+}
+
+/* ----------------------------- Content area ----------------------------- */
+
+.content {
+  padding: 1.5rem 2rem 3rem 2rem;
+  min-width: 0;
+}
+
+.contentHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.contentTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #003d5c;
+}
+
+.contentSubtitle {
+  margin: 0.2rem 0 0 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+/* ----------------------------- Cards / panels --------------------------- */
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  margin-bottom: 1.25rem;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #003d5c;
+}
+
+/* ----------------------------- Buttons ---------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btnPrimary {
+  background: #003d5c;
+  color: #ffffff;
+}
+.btnPrimary:hover {
+  background: #00557d;
+}
+
+.btnAccent {
+  background: #00a8b5;
+  color: #ffffff;
+}
+.btnAccent:hover {
+  background: #33bfc9;
+}
+
+.btnDanger {
+  background: #dc2626;
+  color: #ffffff;
+}
+.btnDanger:hover {
+  background: #b91c1c;
+}
+
+.btnGhost {
+  background: transparent;
+  color: #003d5c;
+  border-color: #cbd5e1;
+}
+.btnGhost:hover {
+  background: #e2e8f0;
+}
+
+.btnSm {
+  padding: 0.32rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.btnDisabled,
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btnRow {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ----------------------------- Forms ------------------------------------ */
+
+.formGrid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+}
+
+.textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #00a8b5;
+  box-shadow: 0 0 0 3px rgba(0, 168, 181, 0.15);
+}
+
+.formActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.helperText {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+/* ----------------------------- Toolbar ---------------------------------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+}
+
+.toolbarLeft,
+.toolbarRight {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  min-width: 240px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.bulkBar {
+  background: #d4f4f7;
+  border: 1px solid #00a8b5;
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-size: 0.88rem;
+  color: #003d5c;
+}
+
+/* ----------------------------- Table ------------------------------------ */
+
+.tableWrapper {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.table th,
+.table td {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.table th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #334155;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.thSortable {
+  cursor: pointer;
+}
+
+.thSortable:hover {
+  background: #eef2f7;
+}
+
+.sortIndicator {
+  margin-left: 0.3rem;
+  color: #00a8b5;
+  font-size: 0.75rem;
+}
+
+.checkboxCell {
+  width: 36px;
+  text-align: center;
+}
+
+.tableEmpty {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+}
+
+.tableRowSelected {
+  background: #f0fbfc;
+}
+
+/* ----------------------------- Badges ----------------------------------- */
+
+.badge {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.badgeSuccess {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badgeWarning {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badgeDanger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.badgeInfo {
+  background: #d4f4f7;
+  color: #003d5c;
+}
+
+/* ----------------------------- Detail view ------------------------------ */
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.85rem 1.5rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.detailLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.detailValue {
+  font-size: 0.95rem;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+/* ----------------------------- Modal ------------------------------------ */
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.25);
+}
+
+.modalTitle {
+  margin: 0 0 0.5rem 0;
+  color: #003d5c;
+  font-size: 1.1rem;
+}
+
+.modalText {
+  margin: 0 0 1rem 0;
+  color: #334155;
+  font-size: 0.92rem;
+}
+
+/* ----------------------------- Charts ----------------------------------- */
+
+.chartGrid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1100px) {
+  .chartGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .chartGridFull {
+    grid-column: 1 / -1;
+  }
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.chartTitle {
+  margin: 0;
+  font-size: 1rem;
+  color: #003d5c;
+}
+
+.periodSwitch {
+  display: inline-flex;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.periodSwitch button {
+  border: none;
+  background: #ffffff;
+  color: #475569;
+  padding: 0.32rem 0.7rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.periodSwitchActive {
+  background: #003d5c !important;
+  color: #ffffff !important;
+}
+
+.legend {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  color: #475569;
+  margin-top: 0.6rem;
+}
+
+.legendDot {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}
+
+.kpiGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-bottom: 1rem;
+}
+
+.kpiCard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.kpiLabel {
+  margin: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.kpiValue {
+  margin: 0.35rem 0 0 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #003d5c;
+}
+
+/* ----------------------------- Mobile ----------------------------------- */
+
+@media (max-width: 880px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: relative;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0;
+    padding: 0.5rem;
+    overflow-x: auto;
+  }
+  .sidebarHeader,
+  .sidebarSection {
+    display: none;
+  }
+  .sidebarItem {
+    border-left: none;
+    border-bottom: 3px solid transparent;
+    padding: 0.5rem 0.75rem;
+    white-space: nowrap;
+  }
+  .sidebarItemActive {
+    border-left-color: transparent;
+    border-bottom-color: #00a8b5;
+  }
+  .content {
+    padding: 1rem;
+  }
+}

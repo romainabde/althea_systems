@@ -1,0 +1,133 @@
+// Schéma unique PostgreSQL (Neon, même base que admin/catalog) : auth, panier, commandes,
+// contact et chat support.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  userId    Int?       @unique @map("user_id")
+  sessionId String?    @unique @map("session_id")
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("cart")
+}
+
+model CartItem {
+  id        Int  @id @default(autoincrement())
+  cartId    Int  @map("cart_id")
+  cart      Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId Int  @map("product_id")
+  quantity  Int  @default(1)
+
+  @@unique([cartId, productId])
+  @@map("cart_item")
+}
+
+model User {
+  id               Int       @id @default(autoincrement())
+  fullName         String    @map("full_name")
+  email            String    @unique
+  passwordHash     String    @map("password_hash")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  isEmailConfirmed Boolean   @default(false) @map("is_email_confirmed")
+  role             String    @default("CUSTOMER")
+  status           String    @default("ACTIVE")
+  locked           Boolean   @default(false)
+  cart             Cart?
+  addresses        Address[]
+  orders           Order[]
+
+  @@map("User")
+}
+
+model Address {
+  id        Int     @id @default(autoincrement())
+  userId    Int?    @map("user_id")
+  user      User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId String? @map("session_id")
+  firstName String  @map("first_name")
+  lastName  String  @map("last_name")
+  street    String
+  city      String
+  zipCode   String  @map("zip_code")
+  country   String
+  phone     String
+  orders    Order[]
+
+  @@map("address")
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  userId      Int?        @map("user_id")
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestEmail  String?     @map("guest_email")
+  sessionId   String?     @map("session_id")
+  addressId   Int         @map("address_id")
+  address     Address     @relation(fields: [addressId], references: [id])
+  totalAmount Float       @map("total_amount")
+  status      String      @default("PENDING")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  items       OrderItem[]
+
+  @@map("Order")
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId   Int   @map("order_id")
+  order     Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int   @map("product_id")
+  name      String
+  price     Float
+  quantity  Int
+
+  @@map("order_item")
+}
+
+// Aligné sur com.althea.shared.model.ContactMessage (table contact_message)
+model ContactMessage {
+  id              Int       @id @default(autoincrement())
+  fullName        String    @map("full_name")
+  email           String
+  subject         String
+  message         String    
+  status          String    @default("NEW")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  responseMessage String?   @map("response_message")
+  respondedBy     String?   @map("responded_by")
+  respondedAt     DateTime? @map("responded_at")
+
+  @@map("contact_message")
+}
+
+model ChatSession {
+  id        Int           @id @default(autoincrement())
+  userEmail String?       @map("user_email")
+  status    String        @default("BOT")
+  createdAt DateTime      @default(now()) @map("created_at")
+  messages  ChatMessage[]
+
+  @@map("chat_session")
+}
+
+model ChatMessage {
+  id        Int         @id @default(autoincrement())
+  sessionId Int         @map("session_id")
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender    String
+  text      String     
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@map("chat_message")
+}
