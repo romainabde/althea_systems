@@ -199,7 +199,7 @@ export default function HomePage() {
                   style={{
                     width: "100%",
                     height: "100%",
-                    backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.4)), url(${slide.imageUrl})`,
+                    backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.4)), url(${catalogAssetUrl(slide.imageUrl)})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     cursor: "pointer",
@@ -491,7 +491,7 @@ export default function HomePage() {
                     width: "100%",
                     height: "100%",
                     zIndex: 1,
-                    backgroundImage: `url(${category.imageUrl || ""})`,
+                    backgroundImage: `url(${catalogAssetUrl(category.imageUrl)})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
                     transition: "transform 0.5s ease",
