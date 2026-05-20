@@ -118,6 +118,7 @@ export default function AccountSettingsPage() {
           id: data.user.id,
           fullName: data.user.fullName,
           email: data.user.email,
+          ...(typeof data.user.role === "string" ? { role: data.user.role } : {}),
         });
       }
 

@@ -22,6 +22,28 @@ const navBtnReset = {
   padding: 0,
 };
 
+const navLinkStyle = { color: "white", textDecoration: "none" };
+
+/** Lien vers le backoffice : uniquement si connecté avec rôle ADMIN. */
+function NavAdminDashboardLink() {
+  const pathname = usePathname();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    const role = getAuthUser()?.role;
+    setVisible(!!token && role === "ADMIN");
+  }, [pathname]);
+
+  if (!visible) return null;
+
+  return (
+    <Link href="/admin" style={navLinkStyle}>
+      Dashboard
+    </Link>
+  );
+}
+
 function NavAuth() {
   const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState(false);
@@ -155,7 +177,9 @@ export default function RootLayout({ children }) {
               {/* Utilisation du lien dynamique avec compteur */}
               <NavCartLink />
               
-              <Link href="/account" style={{ color: "white", textDecoration: "none" }}>Compte</Link>
+              <Link href="/account" style={navLinkStyle}>Compte</Link>
+
+              <NavAdminDashboardLink />
 
               <NavAuth />
             </nav>
