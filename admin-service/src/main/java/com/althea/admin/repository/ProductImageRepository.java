@@ -13,4 +13,6 @@ public interface ProductImageRepository extends MongoRepository<ProductImage, St
     List<ProductImage> findByProductIdIn(Collection<Integer> productIds);
 
     Optional<ProductImage> findByIdAndProductId(String id, Integer productId);
+
+    Optional<ProductImage> findByIdAndCategoryId(String id, Integer categoryId);
 }

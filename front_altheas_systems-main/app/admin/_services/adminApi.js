@@ -102,6 +102,13 @@ export const categoriesApi = {
   get: (id) => get(`/admin/categories/${id}`),
   create: (data) => post("/admin/categories", data),
   update: (id, data) => put(`/admin/categories/${id}`, data),
+  uploadCategoryImageFile: (id, formData) =>
+    httpClient(`/admin/categories/${id}/image`, {
+      method: "POST",
+      body: formData,
+    }),
+  deleteUploadedImage: (id) =>
+    httpClient(`/admin/categories/${id}/image`, { method: "DELETE" }),
   remove: (id) => del(`/admin/categories/${id}`),
   removeMany: (ids) =>
     Promise.all((ids ?? []).map((id) => categoriesApi.remove(id))),

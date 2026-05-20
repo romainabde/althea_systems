@@ -3,3 +3,6 @@ node_modules
 .env
 
 /generated/prisma
+# Ancien fichier SQLite dev (schéma = PostgreSQL maintenant)
+prisma/*.db
+prisma/*.db-journal
