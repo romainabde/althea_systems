@@ -20,5 +20,7 @@ const optionalAuth = (req, res, next) => {
 
 router.post('/', optionalAuth, addressController.createAddress);
 router.get('/', optionalAuth, addressController.getAddresses);
+router.put('/:id', optionalAuth, addressController.updateAddress);
+router.delete('/:id', optionalAuth, addressController.deleteAddress);
 
 module.exports = router;

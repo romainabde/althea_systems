@@ -4,7 +4,7 @@
 // Branchements REST contre admin-service (Spring Boot, port 8083 par défaut).
 //
 // Toutes les routes commencent par "/admin/...". Le httpClient partagé
-// (services/http/client.js) résout automatiquement la base URL via
+// (services/api/http/client.js) résout automatiquement la base URL via
 // API_CONFIG.adminBaseUrl (NEXT_PUBLIC_ADMIN_API_URL).
 //
 // Format d'erreur du back :
@@ -14,7 +14,7 @@
 // composant pour afficher un message à l'utilisateur si besoin.
 // =============================================================================
 
-import { httpClient } from "../../../services/http/client";
+import { httpClient } from "../../../services/api/http/client";
 
 // ----------------------------- helpers ---------------------------------------
 

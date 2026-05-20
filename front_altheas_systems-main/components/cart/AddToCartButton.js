@@ -1,16 +1,18 @@
 "use client";
 
-import { addToCart, getCart } from "../../utils/cart";
+import { useCart } from "../../context/CartContext";
 
 export default function AddToCartButton({ product }) {
-  const handleAddToCart = () => {
-    addToCart(product);
-    console.log("Panier après ajout :", getCart());
-    alert("Produit ajouté au panier");
+  const { addToCart } = useCart();
+
+  const handleAddToCart = async () => {
+    const ok = await addToCart(product);
+    if (ok) alert("Produit ajouté au panier");
   };
 
   return (
     <button
+      type="button"
       onClick={handleAddToCart}
       disabled={!product.inStock}
       style={{

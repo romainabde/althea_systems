@@ -1,4 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import GuestAccountPrompt from "../../components/account/GuestAccountPrompt";
+import { getAuthToken } from "../../services/authSession";
 
 const pageStyle = {
   padding: "1rem",
@@ -23,6 +30,30 @@ const linkStyle = {
 };
 
 export default function AccountDashboardPage() {
+  const pathname = usePathname();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(!!getAuthToken());
+  }, [pathname]);
+
+  if (!loggedIn) {
+    return (
+      <section style={pageStyle}>
+        <h1 style={{ marginBottom: "0.35rem" }}>Mon compte</h1>
+        <p style={{ marginTop: 0, color: "#555" }}>
+          Espace réservé aux clients connectés.
+        </p>
+        <article style={cardStyle}>
+          <GuestAccountPrompt
+            description="Pour consulter vos commandes et vos paramètres, connectez-vous ou créez un compte."
+            nextPath="/account"
+          />
+        </article>
+      </section>
+    );
+  }
+
   return (
     <section style={pageStyle}>
       <h1 style={{ marginBottom: "0.35rem" }}>Mon compte</h1>
@@ -37,6 +68,16 @@ export default function AccountDashboardPage() {
         </p>
         <Link href="/account/orders" style={linkStyle}>
           Voir mes commandes
+        </Link>
+      </article>
+
+      <article style={cardStyle}>
+        <h2 style={{ margin: 0, fontSize: "1rem" }}>Mes adresses</h2>
+        <p style={{ margin: "0.5rem 0 0 0", color: "#555" }}>
+          Livraison et facturation : enregistrez vos adresses pour le passage en caisse.
+        </p>
+        <Link href="/account/addresses" style={linkStyle}>
+          Gérer mes adresses
         </Link>
       </article>
 

@@ -108,12 +108,50 @@ exports.handleChatMessage = async (req, res) => {
     }
 };
 
-exports.endChatSession = async (_req, res) => {
-    res.json({ success: true });
+exports.endChatSession = async (req, res) => {
+    try {
+        const { sessionId } = req.body || {};
+        if (sessionId !== undefined && sessionId !== null && sessionId !== "") {
+            const id = parseInt(sessionId, 10);
+            if (!Number.isNaN(id)) {
+                await prisma.chatSession.update({
+                    where: { id },
+                    data: { status: "ENDED" },
+                });
+            }
+        }
+        res.json({ success: true });
+    } catch (error) {
+        console.error("🚨 Erreur fin de session chat :", error);
+        res.json({ success: true });
+    }
 };
 
-exports.escalateChat = async (_req, res) => {
-    res.json({
-        message: "Votre demande sera transmise a un agent humain.",
-    });
+exports.escalateChat = async (req, res) => {
+    try {
+        const { sessionId } = req.body || {};
+        if (sessionId === undefined || sessionId === null || sessionId === "") {
+            return res.status(400).json({ message: "Session ID requis." });
+        }
+        const id = parseInt(sessionId, 10);
+        if (Number.isNaN(id)) {
+            return res.status(400).json({ message: "Session ID invalide." });
+        }
+
+        await prisma.chatSession.update({
+            where: { id },
+            data: { status: "ESCALATED" },
+        });
+
+        const notice =
+            "Votre demande a été transmise à un agent humain. Vous serez recontacté sous peu.";
+        await prisma.chatMessage.create({
+            data: { sessionId: id, sender: "BOT", text: notice },
+        });
+
+        res.json({ message: notice });
+    } catch (error) {
+        console.error("🚨 Erreur escalade chat :", error);
+        res.status(500).json({ message: "Impossible d'enregistrer l'escalade." });
+    }
 };

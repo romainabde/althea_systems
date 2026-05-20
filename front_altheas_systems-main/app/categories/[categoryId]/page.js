@@ -1,4 +1,4 @@
-import { getCategoryById } from "../../../services/categoryService";
+import { getCategoryById } from "../../../services/api/catalogApi";
 import ProductCard from "../../../components/products/ProductCard";
 
 export default async function CategoryPage({ params }) {

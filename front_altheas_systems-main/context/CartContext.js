@@ -1,68 +1,147 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from "react";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { usePathname } from "next/navigation";
+import {
+  fetchCart as fetchCartApi,
+  addCartItem,
+  updateCartItem,
+  deleteCartItem,
+  clearCartAll,
+} from "../services/api/cartApi";
+import { getAuthToken } from "../services/authSession";
 
 const CartContext = createContext();
 
-export function CartProvider({ children }) {
-  const [cart, setCart] = useState([]);
-  const [isLoggedIn] = useState(false); // Simulation : à changer plus tard pour la connexion
+function mirrorCartToStorage(items) {
+  if (typeof window === "undefined") return;
+  try {
+    const serialized = JSON.stringify(items);
+    localStorage.setItem("althea_cart", serialized);
+    localStorage.setItem("cart", serialized);
+  } catch {
+    /* quota / private mode */
+  }
+}
 
-  // Charger le panier au démarrage depuis le stockage du navigateur
-  useEffect(() => {
-    const savedCart = localStorage.getItem("althea_cart");
-    if (savedCart) setCart(JSON.parse(savedCart));
+export function CartProvider({ children }) {
+  const pathname = usePathname();
+  const [cart, setCart] = useState([]);
+  const [cartTotalHT, setCartTotalHT] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [cartError, setCartError] = useState(null);
+
+  const refreshCart = useCallback(async () => {
+    try {
+      setCartError(null);
+      const { items, cartTotal } = await fetchCartApi();
+      setCart(items);
+      const ht =
+        cartTotal ??
+        items.reduce(
+          (acc, item) =>
+            item.inStock ? acc + item.price * item.quantity : acc,
+          0
+        );
+      setCartTotalHT(ht);
+      mirrorCartToStorage(items);
+    } catch (e) {
+      console.error(e);
+      setCartError(e?.message ?? "Panier indisponible");
+      setCart([]);
+      setCartTotalHT(0);
+      mirrorCartToStorage([]);
+    }
   }, []);
 
-  // Sauvegarder à chaque modification
   useEffect(() => {
-    localStorage.setItem("althea_cart", JSON.stringify(cart));
-  }, [cart]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      await refreshCart();
+      if (!cancelled) setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, refreshCart]);
 
-  const addToCart = (product) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
-      if (existing) {
-        return prev.map((item) => {
-          // On vérifie le stock même à l'ajout direct
-          const realMaxStock = item.stockQuantity || 1;
-          const newQty = Math.min(item.quantity + 1, realMaxStock);
-          return item.id === product.id ? { ...item, quantity: newQty } : item;
-        });
-      }
-      return [...prev, { ...product, quantity: 1 }];
-    });
+  /** @returns {Promise<boolean>} */
+  const addToCart = async (product) => {
+    try {
+      setCartError(null);
+      await addCartItem({
+        productId: product.id,
+        quantity: 1,
+        name: product.name,
+        price: product.price,
+      });
+      await refreshCart();
+      return true;
+    } catch (e) {
+      setCartError(e?.message ?? "Impossible d'ajouter au panier");
+      return false;
+    }
   };
 
-  const removeFromCart = (id) => setCart((prev) => prev.filter((item) => item.id !== id));
-
-  // 💡 NOUVEAU : Fonction pour vider tout le panier d'un coup
-  const clearCart = () => setCart([]);
-
-  const updateQuantity = (id, delta) => {
-    setCart((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          // 💡 On prend le VRAI stock depuis la BDD
-          const realMaxStock = item.stockQuantity || 1;
-          
-          // La quantité ne peut pas descendre sous 1, ni dépasser le stock réel
-          const newQty = Math.max(1, Math.min(item.quantity + delta, realMaxStock));
-          return { ...item, quantity: newQty };
-        }
-        return item;
-      })
-    );
+  const removeFromCart = async (id) => {
+    try {
+      setCartError(null);
+      await deleteCartItem(id);
+      await refreshCart();
+    } catch (e) {
+      setCartError(e?.message ?? "Erreur lors de la suppression");
+    }
   };
 
-  const cartTotalHT = cart.reduce((acc, item) => 
-    item.inStock ? acc + item.price * item.quantity : acc, 0
-  );
+  const clearCart = async () => {
+    try {
+      setCartError(null);
+      await clearCartAll();
+      await refreshCart();
+    } catch (e) {
+      setCartError(e?.message ?? "Impossible de vider le panier");
+    }
+  };
+
+  const updateQuantity = async (id, delta) => {
+    const item = cart.find((x) => x.id === id);
+    if (!item) return;
+    const max = item.stockQuantity ?? 999;
+    const newQty = Math.max(1, Math.min(item.quantity + delta, max));
+    if (newQty === item.quantity) return;
+    try {
+      setCartError(null);
+      await updateCartItem(id, { quantity: newQty });
+      await refreshCart();
+    } catch (e) {
+      setCartError(e?.message ?? "Mise à jour impossible");
+    }
+  };
+
+  const isLoggedIn = !!getAuthToken();
 
   return (
-    <CartContext.Provider value={{ 
-      cart, addToCart, removeFromCart, updateQuantity, clearCart, 
-      cartTotalHT, isLoggedIn 
-    }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        loading,
+        cartError,
+        refreshCart,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        cartTotalHT,
+        isLoggedIn,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

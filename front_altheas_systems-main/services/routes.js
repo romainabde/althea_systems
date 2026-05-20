@@ -1,5 +1,5 @@
 /**
- * Chemins relatifs — le host est choisi dans http/client.js :
+ * Chemins relatifs — le host est choisi dans api/http/client.js :
  * - /api/auth, /api/users, /api/cart, /api/orders, /api/addresses → auth (8080)
  * - /api/chat, /api/form → support (8081)
  * - /admin/* → admin (8083)
@@ -44,6 +44,10 @@ export const API_ROUTES = {
     confirm: "/api/orders/pay",
     result: "/api/orders/checkout/result",
   },
+  /** Commandes du client connecté (JWT) — auth-cart-service */
+  orders: {
+    mine: "/api/orders/mine",
+  },
   auth: {
     login: "/api/auth/login",
     register: "/api/auth/register",
@@ -61,6 +65,7 @@ export const API_ROUTES = {
   addresses: {
     list: "/api/addresses",
     create: "/api/addresses",
+    byId: (addressId) => `/api/addresses/${addressId}`,
   },
   contact: {
     submit: "/api/form",

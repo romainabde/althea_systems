@@ -1,5 +1,5 @@
-import { API_CONFIG } from "../config";
-import { getAuthToken } from "../authSession";
+import { API_CONFIG } from "../../config";
+import { getAuthToken, getOrCreateGuestSessionId } from "../../authSession";
 
 function resolveBaseUrl(endpoint) {
   if (endpoint.startsWith("/api/auth") || endpoint.startsWith("/api/users")) {
@@ -48,6 +48,15 @@ export async function httpClient(endpoint, options = {}) {
   };
   if (token && shouldAttachBearer(endpoint) && !headers.Authorization) {
     headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (
+    (endpoint.startsWith("/api/cart") || endpoint.startsWith("/api/addresses")) &&
+    !token &&
+    !headers["X-Session-Id"]
+  ) {
+    const sid = getOrCreateGuestSessionId();
+    if (sid) headers["X-Session-Id"] = sid;
   }
 
   const response = await fetch(buildRequestUrl(endpoint), {

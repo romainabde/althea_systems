@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { createElement, useMemo, useState } from "react";
 import styles from "../admin.module.css";
 import DataTable from "./DataTable";
 import ConfirmDialog from "./ConfirmDialog";
@@ -24,8 +24,11 @@ import ConfirmDialog from "./ConfirmDialog";
 //   - columns        : colonnes pour DataTable
 //   - rowKey         : (row) => id (défaut row.id)
 //   - searchPlaceholder, searchFields : pour la barre de recherche locale
-//   - renderForm     : ({ initialValues, onSubmit, onCancel, mode }) => JSX
-//                      "mode" vaut "create" ou "edit"
+//   - renderForm     : composant React (CategoryForm, …) ou fonction qui retourne
+//                      du JSX. Ne pas l'invoquer comme renderForm(props) : utiliser
+//                      createElement pour respecter les Rules of Hooks.
+//                      Props : { initialValues, onSubmit, onCancel, mode }
+//                      où "mode" vaut "create" ou "edit"
 //   - renderDetail   : (row) => JSX
 //   - emptyValues    : valeurs initiales pour le formulaire de création
 //   - onCreate, onUpdate, onDelete, onDeleteMany : callbacks (peuvent appeler
@@ -317,12 +320,20 @@ export default function ResourcePanel({
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>Nouveau</h2>
           </div>
-          {renderForm({
+          {createElement(renderForm, {
+            key: "create",
             mode: "create",
             initialValues: emptyValues ?? {},
-            onSubmit: (values) => {
-              if (typeof onCreate === "function") onCreate(values);
-              goToList();
+            onSubmit: async (values) => {
+              try {
+                if (typeof onCreate === "function") {
+                  const result = await Promise.resolve(onCreate(values));
+                  if (result === false) return;
+                }
+                goToList();
+              } catch {
+                /* mutation synchrone qui throw — rester sur le formulaire */
+              }
             },
             onCancel: goToList,
           })}
@@ -334,13 +345,22 @@ export default function ResourcePanel({
           <div className={styles.cardHeader}>
             <h2 className={styles.cardTitle}>Modifier</h2>
           </div>
-          {renderForm({
+          {createElement(renderForm, {
+            key: `edit-${rowKey(activeRow)}`,
             mode: "edit",
             initialValues: activeRow,
-            onSubmit: (values) => {
-              if (typeof onUpdate === "function")
-                onUpdate(rowKey(activeRow), values);
-              goToList();
+            onSubmit: async (values) => {
+              try {
+                if (typeof onUpdate === "function") {
+                  const result = await Promise.resolve(
+                    onUpdate(rowKey(activeRow), values)
+                  );
+                  if (result === false) return;
+                }
+                goToList();
+              } catch {
+                /* mutation synchrone qui throw — rester sur le formulaire */
+              }
             },
             onCancel: goToList,
           })}

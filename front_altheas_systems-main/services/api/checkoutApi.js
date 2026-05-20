@@ -1,7 +1,7 @@
 import { API_CONFIG } from "../config";
-import { httpClient } from "../http/client";
+import { httpClient } from "./http/client";
 import { API_ROUTES } from "../routes";
-import { checkoutStateMock, checkoutSummaryMock } from "../mocks/checkout.mock";
+import { checkoutStateMock, checkoutSummaryMock } from "./mocks/checkout.mock";
 
 let mockCheckoutState = structuredClone(checkoutStateMock);
 

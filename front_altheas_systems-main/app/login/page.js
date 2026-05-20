@@ -1,10 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { loginWithCredentials } from "../../services/api/authApi";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 
-export default function LoginPage() {
+import { loginWithCredentials } from "../../services/api/authApi";
+import { getSafeInternalPath } from "../../utils/safeInternalPath";
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const afterLoginPath = useMemo(
+    () => getSafeInternalPath(searchParams.get("next")),
+    [searchParams]
+  );
+
+  const registerHref = useMemo(() => {
+    const raw = searchParams.get("next");
+    if (raw == null || raw === "") return "/register";
+    const safe = getSafeInternalPath(raw);
+    return `/register?next=${encodeURIComponent(safe)}`;
+  }, [searchParams]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -22,7 +38,7 @@ export default function LoginPage() {
         rememberMe,
       });
       if (result.ok) {
-        window.location.href = "/";
+        window.location.href = afterLoginPath;
       } else {
         setError(result.message);
       }
@@ -95,11 +111,33 @@ export default function LoginPage() {
 
       <p style={{ marginTop: "20px", textAlign: "center" }}>
         Nouveau client ?{" "}
-        <Link href="/register" style={{ color: "#2563eb" }}>
+        <Link href={registerHref} style={{ color: "#2563eb" }}>
           Créer un compte
         </Link>
       </p>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          style={{
+            maxWidth: "400px",
+            margin: "80px auto",
+            padding: "40px",
+            fontFamily: "sans-serif",
+            textAlign: "center",
+          }}
+        >
+          Chargement…
+        </main>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }
 

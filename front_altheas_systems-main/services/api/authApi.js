@@ -1,6 +1,6 @@
 import { persistSession } from "../authSession";
 import { API_CONFIG } from "../config";
-import { buildRequestUrl } from "../http/client";
+import { buildRequestUrl } from "./http/client";
 import { API_ROUTES } from "../routes";
 
 /**

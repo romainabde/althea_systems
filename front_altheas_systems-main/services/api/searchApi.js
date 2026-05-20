@@ -1,7 +1,7 @@
 import { API_CONFIG } from "../config";
-import { httpClient } from "../http/client";
+import { httpClient } from "./http/client";
 import { API_ROUTES } from "../routes";
-import { searchMock } from "../mocks/search.mock";
+import { searchMock } from "./mocks/search.mock";
 
 export async function fetchSearchProducts(params = {}) {
   if (API_CONFIG.useMocks) {

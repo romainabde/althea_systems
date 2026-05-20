@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const authMiddleware = require('../middlewares/authMiddleware');
 const jwt = require('jsonwebtoken'); // On en a besoin pour décoder le token
 
 // --- NOTRE VIGILE SOUPLE (optionalAuth) ---
@@ -20,6 +21,7 @@ const optionalAuth = (req, res, next) => {
 };
 
 // --- NOS ROUTES ---
+router.get('/mine', authMiddleware, orderController.listMyOrders);
 router.post('/checkout', optionalAuth, orderController.checkout);
 router.post('/pay', optionalAuth, orderController.confirmPayment);
 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { confirmEmailAndLogin } from "../../../services/api/authApi";
+import { getSafeInternalPath } from "../../../utils/safeInternalPath";
 
 const pageStyle = {
   padding: "1rem",
@@ -50,8 +51,9 @@ function ConfirmInner() {
           ? result.message
           : "Votre compte est confirmé."
       );
+      const continuePath = getSafeInternalPath(searchParams.get("next"));
       redirectTimer = setTimeout(() => {
-        router.replace("/");
+        router.replace(continuePath);
       }, 2000);
     })();
 
@@ -89,7 +91,7 @@ function ConfirmInner() {
       <h1 style={{ marginBottom: "0.35rem" }}>Bienvenue</h1>
       <p style={cardStyle}>{message}</p>
       <p style={{ marginTop: "0.75rem", color: "#555" }}>
-        Redirection vers l'accueil…
+        Redirection…
       </p>
     </section>
   );

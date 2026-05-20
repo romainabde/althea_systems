@@ -1,11 +1,87 @@
 "use client"; // Nécessaire pour afficher le compteur du panier en temps réel
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import DesktopFooter from "../components/layout/DesktopFooter";
 import ChatWidget from "../components/chat/ChatWidget";
 import HeaderSearchBar from "../components/layout/HeaderSearchBar";
 // 🛒 Import du Context et du Hook pour le compteur
 import { CartProvider, useCart } from "../context/CartContext";
+import { clearAuthSession, getAuthToken, getAuthUser } from "../services/authSession";
+
+const navBtnReset = {
+  color: "white",
+  textDecoration: "none",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  fontWeight: "500",
+  fontFamily: "inherit",
+  fontSize: "inherit",
+  padding: 0,
+};
+
+function NavAuth() {
+  const pathname = usePathname();
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    setLoggedIn(!!getAuthToken());
+    const u = getAuthUser();
+    const name =
+      typeof u?.fullName === "string" && u.fullName.trim()
+        ? u.fullName.trim()
+        : typeof u?.email === "string"
+          ? u.email
+          : "";
+    setDisplayName(name);
+  }, [pathname]);
+
+  function handleLogout() {
+    clearAuthSession();
+    window.location.href = "/";
+  }
+
+  if (!loggedIn) {
+    return (
+      <Link href="/login" style={{ color: "white", textDecoration: "none" }}>
+        Connexion
+      </Link>
+    );
+  }
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "1rem",
+        flexWrap: "wrap",
+      }}
+    >
+      {displayName ? (
+        <span
+          style={{
+            color: "rgba(255,255,255,0.92)",
+            fontSize: "0.88rem",
+            maxWidth: "14rem",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={displayName}
+        >
+          {displayName}
+        </span>
+      ) : null}
+      <button type="button" onClick={handleLogout} style={navBtnReset}>
+        Déconnexion
+      </button>
+    </span>
+  );
+}
 
 // Petit composant interne pour gérer le lien du panier avec son badge
 function NavCartLink() {
@@ -80,6 +156,8 @@ export default function RootLayout({ children }) {
               <NavCartLink />
               
               <Link href="/account" style={{ color: "white", textDecoration: "none" }}>Compte</Link>
+
+              <NavAuth />
             </nav>
           </header>
 

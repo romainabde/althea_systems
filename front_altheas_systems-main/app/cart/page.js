@@ -3,7 +3,23 @@ import { useCart } from "../../context/CartContext";
 import Link from "next/link";
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, cartTotalHT, clearCart } = useCart();
+  const {
+    cart,
+    loading,
+    cartError,
+    removeFromCart,
+    updateQuantity,
+    cartTotalHT,
+    clearCart,
+  } = useCart();
+
+  if (loading && cart.length === 0) {
+    return (
+      <main style={{ padding: "100px 20px", textAlign: "center", fontFamily: "sans-serif" }}>
+        <p style={{ color: "#64748b" }}>Chargement du panier…</p>
+      </main>
+    );
+  }
 
   if (cart.length === 0) {
     return (
@@ -13,6 +29,9 @@ export default function CartPage() {
         <Link href="/products" style={{ backgroundColor: "#0f172a", color: "white", padding: "12px 24px", borderRadius: "8px", textDecoration: "none" }}>
           Découvrir le catalogue
         </Link>
+        {cartError ? (
+          <p style={{ marginTop: "1rem", color: "#b91c1c", fontSize: "0.95rem" }}>{cartError}</p>
+        ) : null}
       </main>
     );
   }
@@ -20,6 +39,9 @@ export default function CartPage() {
   return (
     <main style={{ padding: "40px 20px", maxWidth: "1000px", margin: "0 auto", fontFamily: 'sans-serif' }}>
       <h1 style={{ fontSize: "2.2rem", fontWeight: "bold", marginBottom: "40px" }}>Récapitulatif de votre Panier</h1>
+      {cartError ? (
+        <p style={{ marginBottom: "1rem", color: "#b91c1c", fontSize: "0.95rem" }}>{cartError}</p>
+      ) : null}
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         {cart.map((item) => (

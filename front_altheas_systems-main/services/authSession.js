@@ -1,5 +1,7 @@
 const TOKEN_KEY = "althea_auth_token";
 const USER_KEY = "althea_auth_user";
+/** Invité : header X-Session-Id pour `/api/cart` (auth-cart-service). */
+const GUEST_SESSION_KEY = "althea_guest_session_id";
 
 function readFromStores(key) {
   if (typeof window === "undefined") return null;
@@ -42,4 +44,39 @@ export function clearAuthSession() {
   localStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(USER_KEY);
   localStorage.removeItem(USER_KEY);
+}
+
+/** Stockage qui contient le JWT (session ou local selon « Se souvenir de moi »). */
+function getAuthStorage() {
+  if (typeof window === "undefined") return null;
+  if (sessionStorage.getItem(TOKEN_KEY)) return sessionStorage;
+  if (localStorage.getItem(TOKEN_KEY)) return localStorage;
+  return null;
+}
+
+/** Met à jour le JSON profil minimal après PUT /api/users/profile (sans changer le token). */
+export function patchStoredAuthUser(partial) {
+  if (typeof window === "undefined" || !partial || typeof partial !== "object") return;
+  const store = getAuthStorage();
+  if (!store) return;
+  const prev = getAuthUser() || {};
+  const merged = { ...prev, ...partial };
+  store.setItem(USER_KEY, JSON.stringify(merged));
+}
+
+export function getOrCreateGuestSessionId() {
+  if (typeof window === "undefined") return "";
+  try {
+    let id = localStorage.getItem(GUEST_SESSION_KEY);
+    if (!id) {
+      id =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `guest_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+      localStorage.setItem(GUEST_SESSION_KEY, id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
 }

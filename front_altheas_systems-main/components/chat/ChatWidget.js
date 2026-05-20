@@ -7,7 +7,10 @@ import {
   escalateChatSession,
   sendChatMessage,
   startChatSession,
-} from "../../services/chatbotService";
+} from "../../services/api/chatbotApi";
+
+const SUPPORT_HINT =
+  "Impossible de joindre le service support. Vérifiez que support-service tourne (port 8081) et NEXT_PUBLIC_SUPPORT_API_URL dans .env.local.";
 
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,11 +25,22 @@ export default function ChatWidget() {
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, isTyping, isOpen]);
 
+  function appendBot(text) {
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now() + Math.random(), from: "bot", text },
+    ]);
+  }
+
   async function openChat() {
     if (isOpen) {
       setIsOpen(false);
       if (sessionId) {
-        await endChatSession(sessionId);
+        try {
+          await endChatSession(sessionId);
+        } catch {
+          /* fermeture best-effort */
+        }
         setSessionId(null);
       }
       return;
@@ -34,15 +48,27 @@ export default function ChatWidget() {
 
     setIsOpen(true);
     if (!sessionId) {
-      const session = await startChatSession();
-      setSessionId(session.sessionId);
-      setMessages([
-        {
-          id: Date.now(),
-          from: "bot",
-          text: session.welcomeMessage,
-        },
-      ]);
+      try {
+        const session = await startChatSession();
+        setSessionId(session.sessionId);
+        setMessages([
+          {
+            id: Date.now(),
+            from: "bot",
+            text:
+              session.welcomeMessage ||
+              "Bonjour, comment puis-je vous aider ?",
+          },
+        ]);
+      } catch {
+        setMessages([
+          {
+            id: Date.now(),
+            from: "bot",
+            text: SUPPORT_HINT,
+          },
+        ]);
+      }
     }
   }
 
@@ -50,18 +76,26 @@ export default function ChatWidget() {
     const trimmed = text.trim();
     if (!trimmed) return;
     let currentSessionId = sessionId;
+
     if (!currentSessionId) {
-      const session = await startChatSession();
-      currentSessionId = session.sessionId;
-      setSessionId(currentSessionId);
-      if (messages.length === 0) {
-        setMessages([
-          {
-            id: Date.now(),
-            from: "bot",
-            text: session.welcomeMessage,
-          },
-        ]);
+      try {
+        const session = await startChatSession();
+        currentSessionId = session.sessionId;
+        setSessionId(currentSessionId);
+        if (messages.length === 0) {
+          setMessages([
+            {
+              id: Date.now(),
+              from: "bot",
+              text:
+                session.welcomeMessage ||
+                "Bonjour, comment puis-je vous aider ?",
+            },
+          ]);
+        }
+      } catch {
+        appendBot(SUPPORT_HINT);
+        return;
       }
     }
 
@@ -75,18 +109,27 @@ export default function ChatWidget() {
     setInput("");
     setIsTyping(true);
 
-    const response = await sendChatMessage({
-      sessionId: currentSessionId,
-      message: trimmed,
-    });
+    try {
+      const response = await sendChatMessage({
+        sessionId: currentSessionId,
+        message: trimmed,
+      });
 
-    const botMessage = {
-      id: Date.now() + 1,
-      from: "bot",
-      text: response.reply,
-    };
-    setMessages((prev) => [...prev, botMessage]);
-    setIsTyping(false);
+      const replyText =
+        typeof response?.reply === "string" ? response.reply : "";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          from: "bot",
+          text: replyText || "(Réponse vide)",
+        },
+      ]);
+    } catch {
+      appendBot(SUPPORT_HINT);
+    } finally {
+      setIsTyping(false);
+    }
   }
 
   async function handleSubmit(event) {
@@ -95,13 +138,22 @@ export default function ChatWidget() {
   }
 
   async function handleHumanContact() {
-    const response = await escalateChatSession(sessionId);
-    const botMessage = {
-      id: Date.now() + 2,
-      from: "bot",
-      text: response.message,
-    };
-    setMessages((prev) => [...prev, botMessage]);
+    if (!sessionId) {
+      appendBot(
+        "Ouvrez une conversation en envoyant un message, ou réessayez dans un instant."
+      );
+      return;
+    }
+    try {
+      const response = await escalateChatSession(sessionId);
+      const text =
+        typeof response?.message === "string"
+          ? response.message
+          : "Votre demande a été transmise à un agent.";
+      appendBot(text);
+    } catch {
+      appendBot(SUPPORT_HINT);
+    }
   }
 
   return (
@@ -120,13 +172,19 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          <p className={styles.intro}>Besoin d'aide rapide sur votre commande ?</p>
+          <p className={styles.intro}>
+            Besoin d&apos;aide rapide sur votre commande ?
+          </p>
 
           <div className={styles.messages} ref={listRef}>
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={message.from === "user" ? styles.userMessage : styles.botMessage}
+                className={
+                  message.from === "user"
+                    ? styles.userMessage
+                    : styles.botMessage
+                }
               >
                 {message.text}
               </div>
@@ -134,7 +192,11 @@ export default function ChatWidget() {
             {isTyping ? <div className={styles.botMessage}>...</div> : null}
           </div>
 
-          <button type="button" onClick={handleHumanContact} className={styles.humanButton}>
+          <button
+            type="button"
+            onClick={handleHumanContact}
+            className={styles.humanButton}
+          >
             Contacter un humain
           </button>
 
@@ -146,7 +208,11 @@ export default function ChatWidget() {
               placeholder="Ecrivez votre message..."
               aria-label="Votre message"
             />
-            <button type="submit" className={styles.sendButton} aria-label="Envoyer le message">
+            <button
+              type="submit"
+              className={styles.sendButton}
+              aria-label="Envoyer le message"
+            >
               Envoyer
             </button>
           </form>

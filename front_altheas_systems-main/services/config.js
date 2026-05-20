@@ -5,7 +5,8 @@ export const API_CONFIG = {
   adminBaseUrl: process.env.NEXT_PUBLIC_ADMIN_API_URL || "http://localhost:8083",
   baseUrl:
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8082",
-  useMocks: process.env.NEXT_PUBLIC_USE_API_MOCKS !== "false",
+  /** Mocks uniquement si NEXT_PUBLIC_USE_API_MOCKS=true (sinon vraies APIs). */
+  useMocks: process.env.NEXT_PUBLIC_USE_API_MOCKS === "true",
   defaultHeaders: {
     "Content-Type": "application/json",
   },

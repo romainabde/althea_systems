@@ -24,9 +24,10 @@ public class TopProductService {
         List<TopProduct> products = findActiveTopProducts();
         List<ProductWithImagesDto> finalProducts = new ArrayList<>();
         // Parcourir les produits mis en avant et ajouter les images
-        for(TopProduct topProduct: products){
-            // Ajouter les images au top produit
-            finalProducts.add(productService.getProductWithImages(topProduct.getId()));
+        for (TopProduct topProduct : products) {
+            // Utiliser l'id du produit référencé (product_id), pas l'id de la ligne top_product.
+            Integer productId = topProduct.getProduct().getId();
+            finalProducts.add(productService.getProductWithImages(productId));
         }
 
         return finalProducts;

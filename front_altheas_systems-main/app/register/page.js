@@ -1,10 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { registerWithCredentials } from "../../services/api/authApi";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 
-export default function RegisterPage() {
+import { registerWithCredentials } from "../../services/api/authApi";
+import { getSafeInternalPath } from "../../utils/safeInternalPath";
+
+function RegisterForm() {
+  const searchParams = useSearchParams();
+  const loginHref = useMemo(() => {
+    const raw = searchParams.get("next");
+    if (raw == null || raw === "") return "/login";
+    const safe = getSafeInternalPath(raw);
+    return `/login?next=${encodeURIComponent(safe)}`;
+  }, [searchParams]);
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -109,11 +120,25 @@ export default function RegisterPage() {
 
       <p style={{ marginTop: "20px", textAlign: "center", color: "#64748b" }}>
         Déjà inscrit ?{" "}
-        <Link href="/login" style={{ color: "#2563eb", fontWeight: "bold" }}>
+        <Link href={loginHref} style={{ color: "#2563eb", fontWeight: "bold" }}>
           Connectez-vous
         </Link>
       </p>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <main style={{ maxWidth: "450px", margin: "60px auto", padding: "40px", fontFamily: "sans-serif", textAlign: "center" }}>
+          Chargement…
+        </main>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
   );
 }
 

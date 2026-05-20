@@ -1,5 +1,5 @@
 import { API_CONFIG } from "../config";
-import { httpClient } from "../http/client";
+import { httpClient } from "./http/client";
 import { API_ROUTES } from "../routes";
 
 function sleep(ms) {
@@ -85,4 +85,20 @@ export async function escalateChatSessionApi(payload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export async function startChatSession() {
+  return startChatSessionApi();
+}
+
+export async function sendChatMessage({ sessionId, message }) {
+  return sendChatMessageApi({ sessionId, message });
+}
+
+export async function endChatSession(sessionId) {
+  return endChatSessionApi({ sessionId });
+}
+
+export async function escalateChatSession(sessionId) {
+  return escalateChatSessionApi({ sessionId });
 }

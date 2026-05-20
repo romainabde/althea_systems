@@ -3,6 +3,27 @@ const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_KEY);
 const { sendOrderConfirmation } = require('../utils/emailService');
 
+/** Liste des commandes du client connecté (JWT obligatoire). */
+exports.listMyOrders = async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) {
+            return res.status(401).json({ message: "Non authentifié." });
+        }
+
+        const orders = await prisma.order.findMany({
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+            include: { items: true },
+        });
+
+        res.status(200).json({ orders });
+    } catch (error) {
+        console.error("🚨 ERREUR LISTE COMMANDES :", error);
+        res.status(500).json({ message: "Erreur lors de la récupération des commandes." });
+    }
+};
+
 // --- 1. CRÉATION DE LA COMMANDE (EN ATTENTE) ---
 exports.checkout = async (req, res) => {
     try {

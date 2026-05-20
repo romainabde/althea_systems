@@ -72,17 +72,27 @@ exports.updateProfile = async (req, res) => {
 exports.addAddress = async (req, res) => {
     try {
         const userId = req.user.userId;
-        const { firstName, lastName, address1, city, zipCode, country } = req.body;
+        const street = req.body.street || req.body.address1;
+        const { firstName, lastName, city, zipCode, country, phone } = req.body;
 
-        if (!firstName || !lastName || !address1 || !city || !zipCode || !country) {
-            return res.status(400).json({ message: "Champs obligatoires manquants." });
+        if (!firstName || !lastName || !street || !city || !zipCode || !country || !phone) {
+            return res.status(400).json({
+                message:
+                    "Champs obligatoires manquants (prénom, nom, rue, ville, code postal, pays, téléphone).",
+            });
         }
 
         const newAddress = await prisma.address.create({
             data: {
-                firstName, lastName, address1, city, zipCode, country,
-                userId: userId
-            }
+                firstName,
+                lastName,
+                street: String(street).trim(),
+                city,
+                zipCode,
+                country,
+                phone: String(phone).trim(),
+                userId,
+            },
         });
 
         res.status(201).json({ message: "Adresse ajoutée !", address: newAddress });

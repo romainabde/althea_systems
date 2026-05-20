@@ -9,17 +9,15 @@ Les appels sont centralises dans la couche `services` pour garder une integratio
 
 ### Emplacements
 
-- `services/routes.js`
-- `services/http/client.js`
+- `services/config.js`, `services/routes.js`, `services/authSession.js`
+- `services/api/http/client.js`
 - `services/api/*Api.js`
-- `services/*Service.js`
 - `components/*`
 
 ### Role de chaque couche
 
-- `services/api/*Api.js` : appels HTTP (ou mocks) vers les endpoints.
-- `services/*Service.js` : logique metier front (orchestration/formatage).
-- `components/*` : UI uniquement (pas d'appel API direct).
+- `services/api/*Api.js` : appels HTTP (ou mocks) et petites compositions utiles aux pages.
+- `components/*` : UI ; les appels réseau passent par `services/api`.
 - `services/routes.js` : source unique des routes backend.
 
 ## Chatbot flow
@@ -27,8 +25,7 @@ Les appels sont centralises dans la couche `services` pour garder une integratio
 ### Fichiers
 
 - UI : `components/chat/ChatWidget.js`
-- Service metier : `services/chatbotService.js`
-- Couche API : `services/api/chatbotApi.js`
+- Couche API : `services/api/chatbotApi.js` (`startChatSession`, `sendChatMessage`, etc.)
 
 ### Fonctions exposees
 
