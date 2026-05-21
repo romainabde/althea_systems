@@ -1,7 +1,0 @@
-node_modules
-
-/generated/prisma
-# Ancien fichier SQLite dev (Schéma = PostgreSQL maintenant)
-prisma/*.db
-prisma/*.db-journal
-
