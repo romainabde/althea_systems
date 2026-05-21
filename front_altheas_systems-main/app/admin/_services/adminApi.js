@@ -160,6 +160,14 @@ export const homeCmsApi = {
     patch(`/admin/home/carousel/${id}`, data),
   deleteCarouselSection: (id) =>
     httpClient(`/admin/home/carousel/${id}`, { method: "DELETE" }),
+  /** multipart/form-data — body FormData avec la clé `file`, optionnellement `altText` */
+  uploadCarouselSectionImage: (id, formData) =>
+    httpClient(`/admin/home/carousel/${id}/image`, {
+      method: "POST",
+      body: formData,
+    }),
+  deleteCarouselSectionImage: (id) =>
+    httpClient(`/admin/home/carousel/${id}/image`, { method: "DELETE" }),
 
   // Texte d'accueil (1 seule ressource — UPDATE uniquement)
   getHomepageText: () => get("/admin/home/homepage-text"),

@@ -2,6 +2,7 @@ const prisma = require('../config/prisma');
 const Stripe = require("stripe");
 const stripe = new Stripe(process.env.STRIPE_KEY);
 const { sendOrderConfirmation } = require('../utils/emailService');
+const { getFakeProduct } = require('../utils/productCatalog');
 
 /** Liste des commandes du client connecté (JWT obligatoire). */
 exports.listMyOrders = async (req, res) => {
@@ -57,16 +58,17 @@ exports.checkout = async (req, res) => {
             return res.status(400).json({ message: "Votre panier est vide." });
         }
 
-        // 2. Calculer le total
+        // 2. Calculer le total (même logique de prix que GET /api/cart)
         let totalAmount = 0;
-        const orderItemsData = cart.items.map(item => {
-            const unitPrice = 99; // Simulation de prix
+        const orderItemsData = cart.items.map((item) => {
+            const productData = getFakeProduct(String(item.productId));
+            const unitPrice = productData.price;
             totalAmount += unitPrice * item.quantity;
             return {
                 productId: item.productId,
-                name: `Produit n°${item.productId}`,
+                name: productData.name,
                 price: unitPrice,
-                quantity: item.quantity
+                quantity: item.quantity,
             };
         });
 

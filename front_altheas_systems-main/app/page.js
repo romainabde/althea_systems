@@ -47,6 +47,87 @@ function catalogAssetUrl(path) {
   return `${trimmed}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+/**
+ * Lien slide carrousel :
+ * - CATEGORY → /products?category=<nom> comme les tuiles accueil ; /categories/id peut être réécrit.
+ * - PRODUCT → /products/<id> (fiche produit), prioritaire sur linkUrl.
+ */
+function resolveCarouselHref(slide, categoriesList = []) {
+  const trim = (v) =>
+    typeof v === "string"
+      ? v.trim()
+      : v == null || v === ""
+        ? ""
+        : String(v).trim();
+
+  const type = trim(
+    slide?.linkTargetType ?? slide?.link_target_type
+  ).toUpperCase();
+  const catId = slide?.targetCategoryId ?? slide?.target_category_id;
+  const prodId = slide?.targetProductId ?? slide?.target_product_id;
+
+  /** Fiche produit : même URL que partout ailleurs (`/products/[id]`). */
+  if (type === "PRODUCT" && prodId != null) {
+    return `/products/${prodId}`;
+  }
+
+  const findCategoryNameById = (id) => {
+    if (id == null) return null;
+    const c = categoriesList.find((x) => x != null && String(x.id) === String(id));
+    const n = c?.name?.trim();
+    return n || null;
+  };
+
+  const hrefProductsLikeHomeTile = (categoryId) => {
+    const name = findCategoryNameById(categoryId);
+    if (name) {
+      return `/products?category=${encodeURIComponent(name)}`;
+    }
+    return null;
+  };
+
+  const rewriteCategoriesPathToProductList = (pathname) => {
+    const m = pathname?.match(/^\/categories\/(\d+)\/?$/);
+    if (!m) return null;
+    return hrefProductsLikeHomeTile(m[1]);
+  };
+
+  const linkUrl = slide?.linkUrl ?? slide?.link_url;
+  const raw = trim(linkUrl);
+
+  if (raw) {
+    if (raw.startsWith("http://") || raw.startsWith("https://")) {
+      try {
+        const u = new URL(raw);
+        const rewritten = rewriteCategoriesPathToProductList(u.pathname);
+        if (rewritten) return rewritten;
+        const path = u.pathname || "";
+        if (
+          path.startsWith("/categories/") ||
+          path.startsWith("/products/")
+        ) {
+          return `${path}${u.search}`;
+        }
+      } catch {
+        /* ignore */
+      }
+      return raw;
+    }
+    const pathOnly = raw.split("#")[0];
+    const fromCategoriesPath = rewriteCategoriesPathToProductList(pathOnly);
+    if (fromCategoriesPath) return fromCategoriesPath;
+    if (pathOnly.startsWith("/")) return pathOnly;
+    return `/${pathOnly.replace(/^\/+/u, "")}`;
+  }
+
+  if (type === "CATEGORY" && catId != null) {
+    const likeHome = hrefProductsLikeHomeTile(catId);
+    if (likeHome) return likeHome;
+    return `/categories/${catId}`;
+  }
+  return "/products";
+}
+
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [homePayload, setHomePayload] = useState(null);
@@ -86,6 +167,9 @@ export default function HomePage() {
   const carouselSlides = useMemo(() => {
     const sections = homePayload?.carouselSections;
     if (!Array.isArray(sections)) return [];
+    const catList = [...categories].sort(
+      (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+    );
     return [...sections]
       .sort(
         (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
@@ -95,10 +179,10 @@ export default function HomePage() {
         title: slide.title ?? "",
         subtitle: slide.text ?? "",
         imageUrl: slide.imageUrl ?? "",
-        link: slide.linkUrl || "/products",
+        link: resolveCarouselHref(slide, catList),
         buttonText: "Découvrir",
       }));
-  }, [homePayload]);
+  }, [homePayload, categories]);
 
   const homepageTexts = homePayload?.homepageTexts ?? [];
 

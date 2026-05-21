@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { getCart } from "../../../utils/cart";
+import { useEffect, useState } from "react";
+import { useCheckoutAuthGate } from "../useCheckoutAuthGate";
+import { getLastConfirmation } from "../../../utils/checkoutSession";
 
 const pageStyle = {
   padding: "1rem",
@@ -45,21 +46,50 @@ const secondaryButtonStyle = {
   fontWeight: 600,
 };
 
-function buildMockOrderNumber() {
-  const now = new Date();
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(
-    now.getDate()
-  ).padStart(2, "0")}`;
-  const randomPart = Math.floor(1000 + Math.random() * 9000);
-  return `ALTHEA-${stamp}-${randomPart}`;
-}
-
 export default function CheckoutConfirmationPage() {
-  const orderNumber = useMemo(() => buildMockOrderNumber(), []);
-  const totalPaid = useMemo(() => {
-    const cart = getCart();
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const gate = useCheckoutAuthGate();
+  const [confirm, setConfirm] = useState(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setConfirm(getLastConfirmation());
+    setReady(true);
   }, []);
+
+  if (gate === "checking" || !ready) {
+    return (
+      <section
+        style={{
+          padding: "2rem",
+          textAlign: "center",
+          color: "#64748b",
+          fontFamily: "sans-serif",
+        }}
+      >
+        <p style={{ margin: 0 }}>Vérification de la session…</p>
+      </section>
+    );
+  }
+
+  if (!confirm?.orderId) {
+    return (
+      <section style={pageStyle}>
+        <h1 style={{ marginBottom: "0.35rem" }}>Aucune commande à afficher</h1>
+        <p style={{ marginTop: 0, color: "#555" }}>
+          Cette page affiche la dernière commande confirmée dans cette session. Si
+          vous venez d’arriver ici directement, retournez au catalogue ou au panier.
+        </p>
+        <Link href="/" style={primaryButtonStyle}>
+          Retour à l’accueil
+        </Link>
+      </section>
+    );
+  }
+
+  const totalLabel =
+    confirm.totalPaid != null && !Number.isNaN(Number(confirm.totalPaid))
+      ? `${Number(confirm.totalPaid).toFixed(2)} €`
+      : "—";
 
   return (
     <section style={pageStyle}>
@@ -70,12 +100,19 @@ export default function CheckoutConfirmationPage() {
 
       <article style={cardStyle}>
         <p style={{ margin: 0, fontWeight: 700 }}>Numéro de commande</p>
-        <p style={{ margin: "0.35rem 0 0 0", fontSize: "1.05rem" }}>{orderNumber}</p>
+        <p style={{ margin: "0.35rem 0 0 0", fontSize: "1.05rem" }}>{confirm.orderId}</p>
       </article>
 
       <article style={cardStyle}>
-        <p style={{ margin: 0, fontWeight: 700 }}>Résumé rapide</p>
-        <p style={{ margin: "0.35rem 0 0 0", color: "#444" }}>Total payé : {totalPaid} €</p>
+        <p style={{ margin: 0, fontWeight: 700 }}>Paiement Stripe</p>
+        <p style={{ margin: "0.35rem 0 0 0", color: "#444", wordBreak: "break-all" }}>
+          Transaction : {confirm.transactionId || "—"}
+        </p>
+      </article>
+
+      <article style={cardStyle}>
+        <p style={{ margin: 0, fontWeight: 700 }}>Résumé</p>
+        <p style={{ margin: "0.35rem 0 0 0", color: "#444" }}>Total : {totalLabel}</p>
       </article>
 
       <Link href="/" style={primaryButtonStyle}>
