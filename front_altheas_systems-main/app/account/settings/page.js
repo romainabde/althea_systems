@@ -1,46 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import {
+  AccountAlert,
+  AccountPageShell,
+  accountCardStyle,
+  accountInputStyle,
+  accountLabelStyle,
+  accountPrimaryBtn,
+  accountSectionTitleStyle,
+} from "../../../components/account/accountStyles";
 import GuestAccountPrompt from "../../../components/account/GuestAccountPrompt";
 import { updateUserProfile } from "../../../services/api/userApi";
 import { getAuthToken, getAuthUser, patchStoredAuthUser } from "../../../services/authSession";
-
-const pageStyle = {
-  padding: "1rem",
-  maxWidth: "560px",
-  margin: "0 auto",
-};
-
-const cardStyle = {
-  border: "1px solid #ddd",
-  borderRadius: "12px",
-  padding: "1rem",
-  marginTop: "1rem",
-  background: "#fff",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "0.7rem 0.8rem",
-  border: "1px solid #ccc",
-  borderRadius: "8px",
-  fontSize: "0.95rem",
-  boxSizing: "border-box",
-};
-
-const buttonStyle = {
-  marginTop: "1rem",
-  width: "100%",
-  padding: "0.85rem 1rem",
-  border: "none",
-  borderRadius: "8px",
-  background: "#003d5c",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
 
 const pwdRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -85,7 +58,7 @@ export default function AccountSettingsPage() {
 
     if (wantsPasswordChange) {
       if (!currentPassword) {
-        setError("L’ancien mot de passe est obligatoire pour en définir un nouveau.");
+        setError("L'ancien mot de passe est obligatoire pour en définir un nouveau.");
         return;
       }
       if (newPassword !== confirmPassword) {
@@ -140,7 +113,7 @@ export default function AccountSettingsPage() {
     } catch (e) {
       setError(
         e?.message ||
-          "Impossible de mettre à jour le profil. Vérifiez auth-cart-service et votre connexion."
+          "Impossible de mettre à jour le profil. Vérifiez votre connexion."
       );
     } finally {
       setSubmitting(false);
@@ -149,121 +122,125 @@ export default function AccountSettingsPage() {
 
   if (needsLogin) {
     return (
-      <section style={pageStyle}>
-        <h1 style={{ marginBottom: "0.35rem" }}>Paramètres du compte</h1>
-        <p style={{ marginTop: 0, color: "#555" }}>
-          Connectez-vous ou créez un compte pour modifier vos informations.
-        </p>
-        <GuestAccountPrompt nextPath="/account/settings" />
-        <div style={{ marginTop: "1rem" }}>
-          <Link href="/account" style={{ color: "#003d5c" }}>
-            Retour au compte
-          </Link>
+      <AccountPageShell
+        title="Paramètres"
+        subtitle="Modifiez vos informations personnelles et votre mot de passe."
+        icon="⚙️"
+        accent="#475569"
+      >
+        <div style={{ ...accountCardStyle, padding: "32px" }}>
+          <GuestAccountPrompt nextPath="/account/settings" />
         </div>
-      </section>
+      </AccountPageShell>
     );
   }
 
   return (
-    <section style={pageStyle}>
-      <h1 style={{ marginBottom: "0.35rem" }}>Paramètres du compte</h1>
-      <p style={{ marginTop: 0, color: "#555" }}>
-        Modifications envoyées au serveur (PUT /api/users/profile). Pour changer le mot de passe,
-        renseignez l&apos;ancien et le nouveau.
-      </p>
+    <AccountPageShell
+      title="Paramètres"
+      subtitle="Gérez votre profil et la sécurité de votre compte."
+      icon="⚙️"
+      accent="#475569"
+    >
+      {message ? <AccountAlert type="success">{message}</AccountAlert> : null}
+      {error ? <AccountAlert type="error">{error}</AccountAlert> : null}
 
-      <form onSubmit={handleSubmit} noValidate style={cardStyle}>
-        <label style={{ display: "grid", gap: "0.35rem" }}>
-          Nom complet
-          <input
-            name="fullName"
-            type="text"
-            autoComplete="name"
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
-
-        <label style={{ display: "grid", gap: "0.35rem", marginTop: "0.75rem" }}>
-          E-mail
-          <input
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
-
-        <p
-          style={{
-            marginTop: "1rem",
-            marginBottom: "0.25rem",
-            fontWeight: 600,
-            fontSize: "0.95rem",
-          }}
-        >
-          Changer le mot de passe (facultatif)
-        </p>
-        <label style={{ display: "grid", gap: "0.35rem" }}>
-          Mot de passe actuel
-          <input
-            name="currentPassword"
-            type="password"
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
-        <label style={{ display: "grid", gap: "0.35rem", marginTop: "0.75rem" }}>
-          Nouveau mot de passe
-          <input
-            name="newPassword"
-            type="password"
-            autoComplete="new-password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
-        <label style={{ display: "grid", gap: "0.35rem", marginTop: "0.75rem" }}>
-          Confirmer le nouveau mot de passe
-          <input
-            name="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
-
-        {error ? (
-          <p role="alert" style={{ marginTop: "0.75rem", color: "#b91c1c", marginBottom: 0 }}>
-            {error}
+      <form onSubmit={handleSubmit} noValidate>
+        <div style={{ ...accountCardStyle, marginBottom: "20px" }}>
+          <h2 style={accountSectionTitleStyle}>Informations personnelles</h2>
+          <p style={{ margin: "0 0 18px 0", color: "#64748b", fontSize: "0.92rem" }}>
+            Mettez à jour votre nom et votre adresse e-mail.
           </p>
-        ) : null}
-        {message ? (
-          <p role="status" style={{ marginTop: "0.75rem", color: "#15803d", marginBottom: 0 }}>
-            {message}
-          </p>
-        ) : null}
 
-        <button type="submit" disabled={submitting} style={buttonStyle}>
-          {submitting ? "Enregistrement…" : "Enregistrer"}
-        </button>
+          <div style={{ display: "grid", gap: "16px" }}>
+            <label style={accountLabelStyle}>
+              Nom complet
+              <input
+                name="fullName"
+                type="text"
+                autoComplete="name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                style={accountInputStyle}
+              />
+            </label>
+
+            <label style={accountLabelStyle}>
+              E-mail
+              <input
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={accountInputStyle}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div style={accountCardStyle}>
+          <h2 style={accountSectionTitleStyle}>Mot de passe</h2>
+          <p style={{ margin: "0 0 18px 0", color: "#64748b", fontSize: "0.92rem" }}>
+            Laissez vide si vous ne souhaitez pas le modifier.
+          </p>
+
+          <div style={{ display: "grid", gap: "16px" }}>
+            <label style={accountLabelStyle}>
+              Mot de passe actuel
+              <input
+                name="currentPassword"
+                type="password"
+                autoComplete="current-password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                style={accountInputStyle}
+              />
+            </label>
+            <label style={accountLabelStyle}>
+              Nouveau mot de passe
+              <input
+                name="newPassword"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                style={accountInputStyle}
+              />
+            </label>
+            <label style={accountLabelStyle}>
+              Confirmer le nouveau mot de passe
+              <input
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                style={accountInputStyle}
+              />
+            </label>
+          </div>
+
+          <p style={{ margin: "14px 0 0 0", fontSize: "0.82rem", color: "#94a3b8", lineHeight: 1.5 }}>
+            Minimum 8 caractères, avec majuscule, minuscule, chiffre et caractère spécial.
+          </p>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            style={{
+              ...accountPrimaryBtn,
+              width: "100%",
+              marginTop: "24px",
+              opacity: submitting ? 0.7 : 1,
+              cursor: submitting ? "not-allowed" : "pointer",
+            }}
+          >
+            {submitting ? "Enregistrement…" : "Enregistrer les modifications"}
+          </button>
+        </div>
       </form>
-
-      <Link
-        href="/account"
-        style={{ display: "inline-block", marginTop: "1rem", color: "#003d5c", textDecoration: "none" }}
-      >
-        Retour au compte
-      </Link>
-    </section>
+    </AccountPageShell>
   );
 }

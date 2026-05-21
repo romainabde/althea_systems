@@ -1,9 +1,20 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  AccountAlert,
+  AccountEmptyState,
+  AccountPageShell,
+  accountCardStyle,
+  accountDangerBtn,
+  accountInputStyle,
+  accountLabelStyle,
+  accountPrimaryBtn,
+  accountSecondaryBtn,
+  accountSectionTitleStyle,
+} from "../../../components/account/accountStyles";
 import GuestAccountPrompt from "../../../components/account/GuestAccountPrompt";
 import {
   createAddress,
@@ -12,65 +23,6 @@ import {
   updateAddress,
 } from "../../../services/api/addressesApi";
 import { getAuthToken } from "../../../services/authSession";
-
-const pageStyle = {
-  padding: "1rem",
-  maxWidth: "640px",
-  margin: "0 auto",
-};
-
-const cardStyle = {
-  border: "1px solid #ddd",
-  borderRadius: "12px",
-  padding: "1rem",
-  marginTop: "1rem",
-  background: "#fff",
-};
-
-const inputStyle = {
-  width: "100%",
-  padding: "0.7rem 0.8rem",
-  border: "1px solid #ccc",
-  borderRadius: "8px",
-  fontSize: "0.95rem",
-  boxSizing: "border-box",
-};
-
-const buttonStyle = {
-  marginTop: "1rem",
-  width: "100%",
-  padding: "0.85rem 1rem",
-  border: "none",
-  borderRadius: "8px",
-  background: "#003d5c",
-  color: "#fff",
-  fontWeight: 600,
-  cursor: "pointer",
-};
-
-const rowActionsStyle = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: "0.5rem",
-  marginTop: "0.85rem",
-};
-
-const btnSecondary = {
-  padding: "0.45rem 0.85rem",
-  borderRadius: "8px",
-  border: "2px solid #003d5c",
-  background: "#fff",
-  color: "#003d5c",
-  fontWeight: 600,
-  cursor: "pointer",
-  fontSize: "0.9rem",
-};
-
-const btnDanger = {
-  ...btnSecondary,
-  borderColor: "#b91c1c",
-  color: "#b91c1c",
-};
 
 function formatAddressLines(addr) {
   const lines = [];
@@ -108,6 +60,90 @@ function draftFromAddr(addr) {
   };
 }
 
+function AddressFormFields({ draft, onChange }) {
+  return (
+    <div style={{ display: "grid", gap: "14px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <label style={accountLabelStyle}>
+          Prénom
+          <input
+            value={draft.firstName}
+            onChange={(e) => onChange({ ...draft, firstName: e.target.value })}
+            required
+            autoComplete="given-name"
+            style={accountInputStyle}
+          />
+        </label>
+        <label style={accountLabelStyle}>
+          Nom
+          <input
+            value={draft.lastName}
+            onChange={(e) => onChange({ ...draft, lastName: e.target.value })}
+            required
+            autoComplete="family-name"
+            style={accountInputStyle}
+          />
+        </label>
+      </div>
+      <label style={accountLabelStyle}>
+        Rue et numéro
+        <input
+          value={draft.street}
+          onChange={(e) => onChange({ ...draft, street: e.target.value })}
+          required
+          autoComplete="street-address"
+          style={accountInputStyle}
+        />
+      </label>
+      <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "12px" }}>
+        <label style={accountLabelStyle}>
+          Code postal
+          <input
+            value={draft.zipCode}
+            onChange={(e) => onChange({ ...draft, zipCode: e.target.value })}
+            required
+            autoComplete="postal-code"
+            style={accountInputStyle}
+          />
+        </label>
+        <label style={accountLabelStyle}>
+          Ville
+          <input
+            value={draft.city}
+            onChange={(e) => onChange({ ...draft, city: e.target.value })}
+            required
+            autoComplete="address-level2"
+            style={accountInputStyle}
+          />
+        </label>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+        <label style={accountLabelStyle}>
+          Pays
+          <input
+            value={draft.country}
+            onChange={(e) => onChange({ ...draft, country: e.target.value })}
+            required
+            autoComplete="country-name"
+            style={accountInputStyle}
+          />
+        </label>
+        <label style={accountLabelStyle}>
+          Téléphone
+          <input
+            value={draft.phone}
+            onChange={(e) => onChange({ ...draft, phone: e.target.value })}
+            required
+            type="tel"
+            autoComplete="tel"
+            style={accountInputStyle}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+
 export default function AccountAddressesPage() {
   const pathname = usePathname();
   const [loggedIn, setLoggedIn] = useState(false);
@@ -122,13 +158,7 @@ export default function AccountAddressesPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [street, setStreet] = useState("");
-  const [city, setCity] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [country, setCountry] = useState("");
-  const [phone, setPhone] = useState("");
+  const [newDraft, setNewDraft] = useState(emptyDraft());
 
   const loadAddresses = useCallback(async () => {
     if (!getAuthToken()) return;
@@ -184,7 +214,7 @@ export default function AccountAddressesPage() {
       cancelEdit();
       await loadAddresses();
     } catch (e) {
-      setError(e?.message || "Impossible de mettre à jour l’adresse.");
+      setError(e?.message || "Impossible de mettre à jour l'adresse.");
     } finally {
       setSavingEdit(false);
     }
@@ -206,7 +236,7 @@ export default function AccountAddressesPage() {
       if (editingId === addrId) cancelEdit();
       await loadAddresses();
     } catch (e) {
-      setError(e?.message || "Impossible de supprimer l’adresse.");
+      setError(e?.message || "Impossible de supprimer l'adresse.");
     } finally {
       setDeletingId(null);
     }
@@ -224,26 +254,12 @@ export default function AccountAddressesPage() {
 
     setSubmitting(true);
     try {
-      await createAddress({
-        firstName,
-        lastName,
-        street,
-        city,
-        zipCode,
-        country,
-        phone,
-      });
+      await createAddress(newDraft);
       setMessage("Adresse enregistrée.");
-      setFirstName("");
-      setLastName("");
-      setStreet("");
-      setCity("");
-      setZipCode("");
-      setCountry("");
-      setPhone("");
+      setNewDraft(emptyDraft());
       await loadAddresses();
     } catch (e) {
-      setError(e?.message || "Impossible d’enregistrer l’adresse.");
+      setError(e?.message || "Impossible d'enregistrer l'adresse.");
     } finally {
       setSubmitting(false);
     }
@@ -251,163 +267,97 @@ export default function AccountAddressesPage() {
 
   if (!loggedIn) {
     return (
-      <section style={pageStyle}>
-        <h1 style={{ marginBottom: "0.35rem" }}>Mes adresses</h1>
-        <p style={{ marginTop: 0, color: "#555" }}>
-          Enregistrez des adresses pour la livraison et la facturation de vos commandes.
-        </p>
-        <article style={cardStyle}>
+      <AccountPageShell
+        title="Mes adresses"
+        subtitle="Enregistrez vos adresses de livraison et de facturation."
+        icon="📍"
+        accent="#0891b2"
+      >
+        <div style={{ ...accountCardStyle, padding: "32px" }}>
           <GuestAccountPrompt
             description="Connectez-vous ou créez un compte pour gérer vos adresses."
             nextPath="/account/addresses"
           />
-        </article>
-      </section>
+        </div>
+      </AccountPageShell>
     );
   }
 
   return (
-    <section style={pageStyle}>
-      <h1 style={{ marginBottom: "0.35rem" }}>Mes adresses</h1>
-      <p style={{ marginTop: 0, color: "#555" }}>
-        Ces adresses sont utilisées pour la livraison et la facturation. Une adresse déjà utilisée pour une
-        commande ne peut pas être supprimée.
-      </p>
+    <AccountPageShell
+      title="Mes adresses"
+      subtitle="Utilisées pour la livraison et la facturation de vos commandes."
+      icon="📍"
+      accent="#0891b2"
+    >
+      {message ? <AccountAlert type="success">{message}</AccountAlert> : null}
+      {error ? <AccountAlert type="error">{error}</AccountAlert> : null}
 
       {loading ? (
-        <article style={cardStyle}>
-          <p style={{ margin: 0 }}>Chargement…</p>
-        </article>
-      ) : error ? (
-        <article style={{ ...cardStyle, borderColor: "#fca5a5" }}>
-          <p style={{ margin: 0, color: "#b91c1c" }}>{error}</p>
-        </article>
+        <div style={{ ...accountCardStyle, textAlign: "center", color: "#64748b" }}>
+          Chargement…
+        </div>
       ) : addresses.length === 0 ? (
-        <article style={cardStyle}>
-          <p style={{ margin: 0 }}>Vous n&apos;avez pas encore enregistré d&apos;adresse.</p>
-        </article>
+        <AccountEmptyState
+          icon="📍"
+          title="Aucune adresse enregistrée"
+          description="Ajoutez une adresse pour accélérer vos prochaines commandes."
+        />
       ) : (
-        <div style={{ display: "grid", gap: "0.75rem", marginTop: "1rem" }}>
+        <div style={{ display: "grid", gap: "14px", marginBottom: "28px" }}>
           {addresses.map((addr) => {
             const isEditing = editingId === addr.id;
             return (
-              <article key={addr.id} style={cardStyle}>
-                <p style={{ margin: 0, fontWeight: 700 }}>Adresse n°{addr.id}</p>
+              <article key={addr.id} style={accountCardStyle}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px" }}>
+                  <span style={{ fontSize: "1.3rem" }}>📍</span>
+                  <p style={{ margin: 0, fontWeight: 700, color: "#0f172a" }}>
+                    Adresse #{addr.id}
+                  </p>
+                </div>
 
                 {isEditing ? (
-                  <form onSubmit={submitEdit} style={{ marginTop: "0.75rem" }}>
-                    <div style={{ display: "grid", gap: "0.65rem" }}>
-                      <label style={{ display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
-                        Prénom
-                        <input
-                          value={editDraft.firstName}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({ ...d, firstName: e.target.value }))
-                          }
-                          required
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
-                        Nom
-                        <input
-                          value={editDraft.lastName}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({ ...d, lastName: e.target.value }))
-                          }
-                          required
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
-                        Rue et numéro
-                        <input
-                          value={editDraft.street}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({ ...d, street: e.target.value }))
-                          }
-                          required
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
-                        Code postal
-                        <input
-                          value={editDraft.zipCode}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({ ...d, zipCode: e.target.value }))
-                          }
-                          required
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
-                        Ville
-                        <input
-                          value={editDraft.city}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({ ...d, city: e.target.value }))
-                          }
-                          required
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
-                        Pays
-                        <input
-                          value={editDraft.country}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({ ...d, country: e.target.value }))
-                          }
-                          required
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={{ display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
-                        Téléphone
-                        <input
-                          value={editDraft.phone}
-                          onChange={(e) =>
-                            setEditDraft((d) => ({ ...d, phone: e.target.value }))
-                          }
-                          required
-                          type="tel"
-                          style={inputStyle}
-                        />
-                      </label>
-                    </div>
-                    <div style={rowActionsStyle}>
+                  <form onSubmit={submitEdit}>
+                    <AddressFormFields draft={editDraft} onChange={setEditDraft} />
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "18px" }}>
                       <button
                         type="submit"
                         disabled={savingEdit}
-                        style={{ ...btnSecondary, opacity: savingEdit ? 0.6 : 1 }}
+                        style={{
+                          ...accountPrimaryBtn,
+                          opacity: savingEdit ? 0.6 : 1,
+                        }}
                       >
                         {savingEdit ? "Enregistrement…" : "Enregistrer"}
                       </button>
-                      <button
-                        type="button"
-                        onClick={cancelEdit}
-                        disabled={savingEdit}
-                        style={btnSecondary}
-                      >
+                      <button type="button" onClick={cancelEdit} disabled={savingEdit} style={accountSecondaryBtn}>
                         Annuler
                       </button>
                     </div>
                   </form>
                 ) : (
                   <>
-                    <div style={{ marginTop: "0.5rem", color: "#334155", lineHeight: 1.5 }}>
+                    <div
+                      style={{
+                        padding: "14px 16px",
+                        backgroundColor: "#f8fafc",
+                        borderRadius: "12px",
+                        color: "#334155",
+                        lineHeight: 1.6,
+                        fontSize: "0.95rem",
+                      }}
+                    >
                       {formatAddressLines(addr).map((line, idx) => (
                         <div key={`${addr.id}-${idx}`}>{line}</div>
                       ))}
                     </div>
-                    <div style={rowActionsStyle}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "16px" }}>
                       <button
                         type="button"
                         onClick={() => startEdit(addr)}
                         disabled={deletingId === addr.id}
                         style={{
-                          ...btnSecondary,
+                          ...accountSecondaryBtn,
                           opacity: deletingId === addr.id ? 0.5 : 1,
                         }}
                       >
@@ -418,7 +368,7 @@ export default function AccountAddressesPage() {
                         onClick={() => handleDelete(addr.id)}
                         disabled={deletingId === addr.id}
                         style={{
-                          ...btnDanger,
+                          ...accountDangerBtn,
                           opacity: deletingId === addr.id ? 0.5 : 1,
                         }}
                       >
@@ -433,108 +383,28 @@ export default function AccountAddressesPage() {
         </div>
       )}
 
-      {message ? (
-        <p style={{ marginTop: "1rem", color: "#15803d", fontWeight: 600 }}>{message}</p>
-      ) : null}
-
-      <h2 style={{ marginTop: "1.75rem", marginBottom: "0.35rem", fontSize: "1.05rem" }}>
-        Ajouter une adresse
-      </h2>
-      <form onSubmit={handleSubmitNew} noValidate style={cardStyle}>
-        <div style={{ display: "grid", gap: "0.75rem" }}>
-          <label style={{ display: "grid", gap: "0.35rem" }}>
-            Prénom
-            <input
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-              autoComplete="given-name"
-              style={inputStyle}
-            />
-          </label>
-          <label style={{ display: "grid", gap: "0.35rem" }}>
-            Nom
-            <input
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-              autoComplete="family-name"
-              style={inputStyle}
-            />
-          </label>
-          <label style={{ display: "grid", gap: "0.35rem" }}>
-            Rue et numéro
-            <input
-              value={street}
-              onChange={(e) => setStreet(e.target.value)}
-              required
-              autoComplete="street-address"
-              style={inputStyle}
-            />
-          </label>
-          <label style={{ display: "grid", gap: "0.35rem" }}>
-            Code postal
-            <input
-              value={zipCode}
-              onChange={(e) => setZipCode(e.target.value)}
-              required
-              autoComplete="postal-code"
-              style={inputStyle}
-            />
-          </label>
-          <label style={{ display: "grid", gap: "0.35rem" }}>
-            Ville
-            <input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              required
-              autoComplete="address-level2"
-              style={inputStyle}
-            />
-          </label>
-          <label style={{ display: "grid", gap: "0.35rem" }}>
-            Pays
-            <input
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              required
-              autoComplete="country-name"
-              style={inputStyle}
-            />
-          </label>
-          <label style={{ display: "grid", gap: "0.35rem" }}>
-            Téléphone
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              type="tel"
-              autoComplete="tel"
-              style={inputStyle}
-            />
-          </label>
-        </div>
-        {submitting ? (
-          <p style={{ marginTop: "1rem", marginBottom: 0 }}>Enregistrement…</p>
-        ) : (
-          <button type="submit" style={buttonStyle}>
-            Enregistrer l&apos;adresse
+      <div style={accountCardStyle}>
+        <h2 style={accountSectionTitleStyle}>Ajouter une adresse</h2>
+        <p style={{ margin: "0 0 18px 0", color: "#64748b", fontSize: "0.92rem" }}>
+          Renseignez les informations de livraison ci-dessous.
+        </p>
+        <form onSubmit={handleSubmitNew} noValidate>
+          <AddressFormFields draft={newDraft} onChange={setNewDraft} />
+          <button
+            type="submit"
+            disabled={submitting}
+            style={{
+              ...accountPrimaryBtn,
+              width: "100%",
+              marginTop: "20px",
+              opacity: submitting ? 0.7 : 1,
+              cursor: submitting ? "not-allowed" : "pointer",
+            }}
+          >
+            {submitting ? "Enregistrement…" : "Enregistrer l'adresse"}
           </button>
-        )}
-      </form>
-
-      <Link
-        href="/account"
-        style={{
-          display: "inline-block",
-          marginTop: "1.25rem",
-          color: "#003d5c",
-          textDecoration: "none",
-          fontWeight: 600,
-        }}
-      >
-        Retour au compte
-      </Link>
-    </section>
+        </form>
+      </div>
+    </AccountPageShell>
   );
 }

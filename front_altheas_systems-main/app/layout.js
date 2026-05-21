@@ -6,9 +6,10 @@ import { useEffect, useState } from "react";
 import DesktopFooter from "../components/layout/DesktopFooter";
 import ChatWidget from "../components/chat/ChatWidget";
 import HeaderSearchBar from "../components/layout/HeaderSearchBar";
+import MiniCart from "../components/cart/MiniCart";
 // 🛒 Import du Context et du Hook pour le compteur
 import { CartProvider, useCart } from "../context/CartContext";
-import { clearAuthSession, getAuthToken, getAuthUser } from "../services/authSession";
+import { prepareLogoutSession, getAuthToken, getAuthUser } from "../services/authSession";
 
 const navBtnReset = {
   color: "white",
@@ -46,6 +47,7 @@ function NavAdminDashboardLink() {
 
 function NavAuth() {
   const pathname = usePathname();
+  const { resetLocalCart } = useCart();
   const [loggedIn, setLoggedIn] = useState(false);
   const [displayName, setDisplayName] = useState("");
 
@@ -62,7 +64,8 @@ function NavAuth() {
   }, [pathname]);
 
   function handleLogout() {
-    clearAuthSession();
+    prepareLogoutSession();
+    resetLocalCart();
     window.location.href = "/";
   }
 
@@ -107,27 +110,38 @@ function NavAuth() {
 
 // Petit composant interne pour gérer le lien du panier avec son badge
 function NavCartLink() {
-  const { cart } = useCart();
+  const { cart, setIsMiniCartOpen } = useCart();
   const itemCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <Link href="/cart" style={{ color: "white", textDecoration: "none", display: "flex", alignItems: "center", gap: "5px" }}>
+    <button
+      type="button"
+      onClick={() => setIsMiniCartOpen(true)}
+      style={{
+        ...navBtnReset,
+        display: "flex",
+        alignItems: "center",
+        gap: "5px",
+      }}
+    >
       Panier
       {itemCount > 0 && (
-        <span style={{
-          backgroundColor: "#ef4444",
-          color: "white",
-          fontSize: "0.75rem",
-          fontWeight: "bold",
-          padding: "2px 6px",
-          borderRadius: "10px",
-          minWidth: "15px",
-          textAlign: "center"
-        }}>
+        <span
+          style={{
+            backgroundColor: "#ef4444",
+            color: "white",
+            fontSize: "0.75rem",
+            fontWeight: "bold",
+            padding: "2px 6px",
+            borderRadius: "10px",
+            minWidth: "15px",
+            textAlign: "center",
+          }}
+        >
           {itemCount}
         </span>
       )}
-    </Link>
+    </button>
   );
 }
 
@@ -137,7 +151,8 @@ export default function RootLayout({ children }) {
       <body style={{ margin: 0, padding: 0 }}>
         {/* 🛒 CartProvider enveloppe tout pour que l'état du panier soit partagé */}
         <CartProvider>
-          
+          <MiniCart />
+
           <header style={{ 
             padding: "1rem 2rem", 
             background: "#003d5c", 

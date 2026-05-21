@@ -1,3 +1,5 @@
+import { clearCartMirror } from "../utils/cart";
+
 const TOKEN_KEY = "althea_auth_token";
 const USER_KEY = "althea_auth_user";
 /** Invité : header X-Session-Id pour `/api/cart` (auth-cart-service). */
@@ -44,6 +46,26 @@ export function clearAuthSession() {
   localStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(USER_KEY);
   localStorage.removeItem(USER_KEY);
+}
+
+/** Nouvelle session invité (panier invité vide côté API après déconnexion). */
+export function resetGuestSessionId() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(GUEST_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Déconnexion : efface l’auth, le miroir local du panier et l’ID invité.
+ * Le panier compte en base reste intact pour la prochaine connexion.
+ */
+export function prepareLogoutSession() {
+  clearAuthSession();
+  clearCartMirror();
+  resetGuestSessionId();
 }
 
 /** Stockage qui contient le JWT (session ou local selon « Se souvenir de moi »). */

@@ -151,7 +151,7 @@ export default function StripePaymentForm({ pending }) {
       });
       clearPendingCheckoutOrder();
       await refreshCart();
-      router.push("/checkout/confirmation");
+      router.replace("/account");
     } catch (e) {
       setError(e?.message || "Le paiement a échoué.");
     } finally {

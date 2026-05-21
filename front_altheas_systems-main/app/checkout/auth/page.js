@@ -33,7 +33,7 @@ export default function CheckoutAuthPage() {
 
   useEffect(() => {
     if (getAuthToken()) {
-      router.replace("/checkout/address");
+      router.replace("/checkout");
       return;
     }
     setChecking(false);
@@ -58,7 +58,7 @@ export default function CheckoutAuthPage() {
         <article style={choiceCardStyle}>
           <h2 style={{ margin: 0, fontSize: "1rem" }}>Connexion</h2>
           <p style={{ margin: 0, color: "#555" }}>J&apos;ai déjà un compte.</p>
-          <Link href="/login?next=%2Fcheckout%2Faddress" style={actionButtonStyle}>
+          <Link href="/login?next=%2Fcheckout" style={actionButtonStyle}>
             Se connecter
           </Link>
         </article>
@@ -66,7 +66,7 @@ export default function CheckoutAuthPage() {
         <article style={choiceCardStyle}>
           <h2 style={{ margin: 0, fontSize: "1rem" }}>Inscription</h2>
           <p style={{ margin: 0, color: "#555" }}>Je crée un compte pour continuer.</p>
-          <Link href="/register?next=%2Fcheckout%2Faddress" style={actionButtonStyle}>
+          <Link href="/register?next=%2Fcheckout" style={actionButtonStyle}>
             Créer un compte
           </Link>
         </article>

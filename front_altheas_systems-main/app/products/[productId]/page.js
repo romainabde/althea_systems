@@ -218,7 +218,7 @@ export default function ProductPage() {
       name: product.name,
       price: product.price,
       inStock: product.inStock,
-      stockQuantity: Math.max(1, product.stockQuantity || 1),
+      stockQuantity: product.stockQuantity ?? (product.inStock ? 1 : 0),
       imageUrl: product.imageUrls?.[0] || PLACEHOLDER_IMG,
     };
   }, [product]);

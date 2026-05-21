@@ -516,7 +516,7 @@ function CarouselForm({
     }
   }
 
-  async function handleDeleteCarouselMongoImage() {
+  async function handleDeleteCarouselImage() {
     if (sectionId == null) return;
     setFormError(null);
     setUploadBusy(true);
@@ -538,9 +538,7 @@ function CarouselForm({
 
     const t = values.linkTargetType || "CUSTOM";
     if (t === "CUSTOM" && !(values.linkUrl?.trim())) {
-      setFormError(
-        'Pour « URL libre », renseignez le champ lien (obligatoire côté serveur).'
-      );
+      setFormError("Indiquez le lien de destination.");
       return;
     }
     if (
@@ -561,13 +559,6 @@ function CarouselForm({
     onSubmit(values);
   }
 
-  const hintStyle = {
-    fontSize: "0.82rem",
-    color: "#64748b",
-    marginTop: "0.35rem",
-    lineHeight: 1.35,
-  };
-
   return (
     <form onSubmit={submit}>
       {formError && (
@@ -583,82 +574,105 @@ function CarouselForm({
           ⚠ {formError}
         </div>
       )}
-      <div className={styles.formGrid}>
-        <Field label="Titre *">
-          <input
-            className={styles.input}
-            value={values.title}
-            onChange={(e) => update("title", e.target.value)}
+
+      <div className={styles.formSection}>
+        <h3 className={styles.formSectionTitle}>Contenu</h3>
+        <div className={styles.formGrid}>
+          <Field label="Titre *">
+            <input
+              className={styles.input}
+              value={values.title}
+              onChange={(e) => update("title", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Ordre d'affichage *">
+            <input
+              type="number"
+              min="1"
+              className={styles.input}
+              value={values.displayOrder}
+              onChange={(e) => update("displayOrder", e.target.value)}
+              required
+            />
+          </Field>
+          <Field label="Visible sur le site">
+            <select
+              className={styles.select}
+              value={values.active ? "true" : "false"}
+              onChange={(e) => update("active", e.target.value === "true")}
+            >
+              <option value="true">Oui</option>
+              <option value="false">Non</option>
+            </select>
+          </Field>
+        </div>
+        <Field label="Texte / accroche *">
+          <textarea
+            className={styles.textarea}
+            style={{ minHeight: "120px" }}
+            value={values.text}
+            onChange={(e) => update("text", e.target.value)}
             required
           />
         </Field>
-        <Field label="URL image (manuel – optionnel)">
-          <input
-            className={styles.input}
-            value={values.imageUrl}
-            onChange={(e) => update("imageUrl", e.target.value)}
-            placeholder="/images/… ou https://…"
-          />
-          <p style={hintStyle}>
-            Laissez vide puis créez la section : en modification, vous pouvez envoyer
-            un fichier (Mongo, lien <code>/images/…</code>), comme pour les produits.
+      </div>
+
+      <div className={styles.formSection}>
+        <h3 className={styles.formSectionTitle}>Image</h3>
+        {sectionId != null ? (
+          <>
+            <Field label="Ajouter une image">
+              <div className={styles.imageUploadBox}>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  disabled={uploadBusy}
+                />
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnSm} ${styles.btnPrimary}`}
+                  disabled={uploadBusy}
+                  onClick={handleUploadCarouselFile}
+                >
+                  {uploadBusy ? "…" : "Envoyer le fichier"}
+                </button>
+                {typeof values.imageUrl === "string" &&
+                  values.imageUrl.startsWith("/images/") && (
+                    <button
+                      type="button"
+                      className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
+                      disabled={uploadBusy}
+                      onClick={handleDeleteCarouselImage}
+                    >
+                      Supprimer l&apos;image
+                    </button>
+                  )}
+              </div>
+            </Field>
+            {carouselPreviewSrc(values.imageUrl) && (
+              <Field label="Aperçu">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={carouselPreviewSrc(values.imageUrl)}
+                  alt=""
+                  className={styles.carouselPreviewImg}
+                />
+              </Field>
+            )}
+          </>
+        ) : (
+          <p className={styles.helperText}>
+            Créez la section d&apos;abord, puis revenez la modifier pour ajouter
+            une image.
           </p>
-        </Field>
-        {sectionId != null && (
-          <Field label="Fichier image (Mongo)">
-            <div
-              className={styles.btnRow}
-              style={{
-                flexWrap: "wrap",
-                gap: "0.5rem",
-                alignItems: "center",
-              }}
-            >
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                disabled={uploadBusy}
-              />
-              <button
-                type="button"
-                className={`${styles.btn} ${styles.btnSm} ${styles.btnPrimary}`}
-                disabled={uploadBusy}
-                onClick={handleUploadCarouselFile}
-              >
-                {uploadBusy ? "…" : "Envoyer le fichier"}
-              </button>
-              {typeof values.imageUrl === "string" &&
-                values.imageUrl.startsWith("/images/") && (
-                  <button
-                    type="button"
-                    className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
-                    disabled={uploadBusy}
-                    onClick={handleDeleteCarouselMongoImage}
-                  >
-                    Retirer l&apos;image Mongo
-                  </button>
-                )}
-            </div>
-          </Field>
         )}
-        {carouselPreviewSrc(values.imageUrl) && (
-          <Field label="Aperçu">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={carouselPreviewSrc(values.imageUrl)}
-              alt=""
-              style={{
-                maxWidth: "100%",
-                maxHeight: "180px",
-                objectFit: "contain",
-                borderRadius: "8px",
-                border: "1px solid #e2e8f0",
-              }}
-            />
-          </Field>
-        )}
-        <Field label="Destination du clic *">
+      </div>
+
+      <div className={styles.formSection}>
+        <h3 className={styles.formSectionTitle}>Lien au clic</h3>
+        <Field label="Destination *">
           <select
             className={styles.select}
             value={values.linkTargetType}
@@ -670,116 +684,91 @@ function CarouselForm({
               </option>
             ))}
           </select>
-          <p style={hintStyle}>
-            URL libre : lien exact. Catégorie / produit : le catalogue peut
-            compléter l’URL si vous laissez le champ lien vide (
-            <code>/categories/…</code>, <code>/products/…</code>).
+          <p className={styles.infoBox}>
+            Choisissez où mène le clic sur la bannière. Pour une catégorie ou un
+            produit, le lien est généré automatiquement.
           </p>
         </Field>
 
-        {values.linkTargetType === "CUSTOM" && (
-          <Field label="Lien (URL) *">
-            <input
-              className={styles.input}
-              value={values.linkUrl}
-              onChange={(e) => update("linkUrl", e.target.value)}
-              placeholder="https://… ou /chemin-interne"
-              required
-            />
-          </Field>
-        )}
+        <div className={styles.formGrid} style={{ marginTop: "0.85rem" }}>
+          {values.linkTargetType === "CUSTOM" && (
+            <Field label="Lien de destination *">
+              <input
+                className={styles.input}
+                value={values.linkUrl}
+                onChange={(e) => update("linkUrl", e.target.value)}
+                placeholder="/contact ou https://…"
+                required
+              />
+            </Field>
+          )}
 
-        {values.linkTargetType === "CATEGORY" && (
-          <Field label="Catégorie *">
-            <select
-              className={styles.select}
-              disabled={optionsLoading}
-              value={values.targetCategoryId === "" ? "" : String(values.targetCategoryId)}
-              onChange={(e) => update("targetCategoryId", e.target.value)}
-              required
-            >
-              <option value="">
-                {optionsLoading ? "Chargement…" : "— Choisir une catégorie —"}
-              </option>
-              {categories.map((c) => (
-                <option key={c.id} value={String(c.id)}>
-                  #{c.id} — {c.name ?? "?"}
+          {values.linkTargetType === "CATEGORY" && (
+            <Field label="Catégorie *">
+              <select
+                className={styles.select}
+                disabled={optionsLoading}
+                value={
+                  values.targetCategoryId === ""
+                    ? ""
+                    : String(values.targetCategoryId)
+                }
+                onChange={(e) => update("targetCategoryId", e.target.value)}
+                required
+              >
+                <option value="">
+                  {optionsLoading ? "Chargement…" : "— Choisir une catégorie —"}
                 </option>
-              ))}
-            </select>
-            <p style={hintStyle}>
-              Optionnel : URL personnalisée ci‑dessous (sinon dérivée du front /
-              catalogue).
-            </p>
-          </Field>
-        )}
+                {categories.map((c) => (
+                  <option key={c.id} value={String(c.id)}>
+                    {c.name ?? "?"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
 
-        {values.linkTargetType === "PRODUCT" && (
-          <Field label="Produit *">
-            <select
-              className={styles.select}
-              disabled={optionsLoading}
-              value={values.targetProductId === "" ? "" : String(values.targetProductId)}
-              onChange={(e) => update("targetProductId", e.target.value)}
-              required
-            >
-              <option value="">
-                {optionsLoading ? "Chargement…" : "— Choisir un produit —"}
-              </option>
-              {products.map((p) => (
-                <option key={p.id} value={String(p.id)}>
-                  #{p.id} — {p.name || "(sans nom)"}
+          {values.linkTargetType === "PRODUCT" && (
+            <Field label="Produit *">
+              <select
+                className={styles.select}
+                disabled={optionsLoading}
+                value={
+                  values.targetProductId === ""
+                    ? ""
+                    : String(values.targetProductId)
+                }
+                onChange={(e) => update("targetProductId", e.target.value)}
+                required
+              >
+                <option value="">
+                  {optionsLoading ? "Chargement…" : "— Choisir un produit —"}
                 </option>
-              ))}
-            </select>
-            <p style={hintStyle}>
-              Liste chargée depuis le catalogue admin (tous les produits).
-              Optionnel : URL personnalisée ci‑dessous.
-            </p>
-          </Field>
-        )}
+                {products.map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.name || "(sans nom)"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
 
-        {(values.linkTargetType === "CATEGORY" ||
-          values.linkTargetType === "PRODUCT") && (
-          <Field label="Lien (URL) — optionnel">
-            <input
-              className={styles.input}
-              value={values.linkUrl}
-              onChange={(e) => update("linkUrl", e.target.value)}
-              placeholder="Laisser vide pour lien automatique vers la page"
-            />
-          </Field>
-        )}
-
-        <Field label="Ordre d'affichage *">
-          <input
-            type="number"
-            min="1"
-            className={styles.input}
-            value={values.displayOrder}
-            onChange={(e) => update("displayOrder", e.target.value)}
-            required
-          />
-        </Field>
-        <Field label="Active">
-          <select
-            className={styles.select}
-            value={values.active ? "true" : "false"}
-            onChange={(e) => update("active", e.target.value === "true")}
-          >
-            <option value="true">Oui</option>
-            <option value="false">Non</option>
-          </select>
-        </Field>
+          {(values.linkTargetType === "CATEGORY" ||
+            values.linkTargetType === "PRODUCT") && (
+            <Field label="Lien personnalisé (optionnel)">
+              <input
+                className={styles.input}
+                value={values.linkUrl}
+                onChange={(e) => update("linkUrl", e.target.value)}
+                placeholder="Laisser vide pour le lien automatique"
+              />
+              <p className={styles.helperText}>
+                Laissez vide pour ouvrir la page correspondante sur le site.
+              </p>
+            </Field>
+          )}
+        </div>
       </div>
-      <Field label="Texte / accroche *">
-        <textarea
-          className={styles.textarea}
-          value={values.text}
-          onChange={(e) => update("text", e.target.value)}
-          required
-        />
-      </Field>
       <div className={styles.formActions}>
         <button
           type="button"

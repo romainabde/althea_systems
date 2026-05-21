@@ -22,6 +22,7 @@ const optionalAuth = (req, res, next) => {
 
 // --- NOS ROUTES ---
 router.get('/mine', authMiddleware, orderController.listMyOrders);
+router.get('/:id', authMiddleware, orderController.getOrderById);
 router.post('/checkout', optionalAuth, orderController.checkout);
 router.post('/pay', optionalAuth, orderController.confirmPayment);
 

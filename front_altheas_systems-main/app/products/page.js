@@ -1,25 +1,20 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   fetchAllCategories,
-  fetchCategoryById,
   fetchProductsByCategory,
-  fetchProductSearch,
 } from "../../services/api/catalogApi";
+import CatalogProductCard from "../../components/catalog/CatalogProductCard";
 
-const DEFAULT_HERO = {
-  name: "Catalogue Complet",
+const HERO = {
+  title: "Catalogue Général",
   description:
-    "Découvrez l'ensemble de notre matériel médical et chirurgical de haute technologie.",
+    "Parcourez l'intégralité de nos équipements de pointe. Découvrez nos domaines d'expertise pour répondre à tous vos besoins médicaux.",
   imageUrl:
-    "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1200",
+    "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=1600",
 };
-
-const PLACEHOLDER_IMG =
-  "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=600";
 
 function catalogAssetUrl(path) {
   if (!path) return "";
@@ -30,7 +25,7 @@ function catalogAssetUrl(path) {
   return `${trimmed}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/** Accepte ProductWithImagesDto ou produit « plat » (mock). */
+/** Accepte ProductWithImagesDto ou produit plat. */
 function normalizeProductRows(rows) {
   if (!Array.isArray(rows)) return [];
   return rows.map((row) => {
@@ -67,18 +62,25 @@ function normalizeProductRows(rows) {
   });
 }
 
-function matchCategoryFromParam(categories, categoryParam) {
+function sortCatalogProducts(products) {
+  return [...products].sort((a, b) => {
+    if (a.inStock && !b.inStock) return -1;
+    if (!a.inStock && b.inStock) return 1;
+    return (a.priority ?? 999) - (b.priority ?? 999);
+  });
+}
+
+function sectionAnchorId(categoryId) {
+  return `category-${categoryId}`;
+}
+
+function matchCategoryParam(sections, categoryParam) {
   if (!categoryParam?.trim()) return null;
-  const decoded = decodeURIComponent(categoryParam).trim();
-  const lower = decoded.toLowerCase();
-  const exact = categories.find(
-    (c) => c.name?.trim().toLowerCase() === lower
-  );
-  if (exact) return exact;
-  return categories.find(
-    (c) =>
-      c.name?.toLowerCase().includes(lower) ||
-      String(c.id).toLowerCase() === lower
+  const decoded = decodeURIComponent(categoryParam).trim().toLowerCase();
+  return (
+    sections.find((s) => String(s.id).toLowerCase() === decoded) ||
+    sections.find((s) => s.name?.trim().toLowerCase() === decoded) ||
+    sections.find((s) => s.name?.toLowerCase().includes(decoded))
   );
 }
 
@@ -88,8 +90,7 @@ export default function CatalogPage() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [displayData, setDisplayData] = useState(DEFAULT_HERO);
-  const [rawRows, setRawRows] = useState([]);
+  const [sections, setSections] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,53 +102,34 @@ export default function CatalogPage() {
         const categories = await fetchAllCategories();
         if (cancelled) return;
 
-        const matched = matchCategoryFromParam(categories, categoryParam || "");
+        const activeCategories = (Array.isArray(categories) ? categories : [])
+          .filter((c) => c.active !== false)
+          .sort(
+            (a, b) => (a.displayOrder ?? 999) - (b.displayOrder ?? 999)
+          );
 
-        if (matched) {
-          const [catMeta, products] = await Promise.all([
-            fetchCategoryById(matched.id),
-            fetchProductsByCategory(matched.id),
-          ]);
-          if (cancelled) return;
+        const loadedSections = await Promise.all(
+          activeCategories.map(async (cat) => {
+            const productsRaw = await fetchProductsByCategory(cat.id);
+            return {
+              id: cat.id,
+              name: cat.name || "Catégorie",
+              description: cat.description || "",
+              products: sortCatalogProducts(
+                normalizeProductRows(productsRaw || [])
+              ),
+            };
+          })
+        );
 
-          const meta = catMeta && typeof catMeta === "object" ? catMeta : {};
-          setDisplayData({
-            name: meta.name || matched.name || DEFAULT_HERO.name,
-            description:
-              meta.description ||
-              matched.description ||
-              DEFAULT_HERO.description,
-            imageUrl:
-              meta.imageUrl ||
-              matched.imageUrl ||
-              DEFAULT_HERO.imageUrl,
-          });
-          setRawRows(products || []);
-        } else {
-          if (categoryParam) {
-            setDisplayData({
-              ...DEFAULT_HERO,
-              description: `Aucune catégorie correspondant à « ${decodeURIComponent(categoryParam)} ». Voici tout le catalogue.`,
-            });
-          } else {
-            setDisplayData(DEFAULT_HERO);
-          }
-
-          const page = await fetchProductSearch({
-            page: 0,
-            size: 500,
-            sort: "availability",
-          });
-          if (cancelled) return;
-          setRawRows(page?.content || []);
-        }
+        if (!cancelled) setSections(loadedSections);
       } catch (e) {
         if (!cancelled) {
           setError(
             e.message ||
               "Impossible de charger le catalogue. Vérifie le catalog-service (8082)."
           );
-          setRawRows([]);
+          setSections([]);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -157,16 +139,17 @@ export default function CatalogPage() {
     return () => {
       cancelled = true;
     };
-  }, [categoryParam]);
+  }, []);
 
-  const sortedProducts = useMemo(() => {
-    const list = normalizeProductRows(rawRows);
-    return [...list].sort((a, b) => {
-      if (a.inStock && !b.inStock) return -1;
-      if (!a.inStock && b.inStock) return 1;
-      return (a.priority ?? 999) - (b.priority ?? 999);
-    });
-  }, [rawRows]);
+  useEffect(() => {
+    if (loading || sections.length === 0 || !categoryParam) return;
+    const matched = matchCategoryParam(sections, categoryParam);
+    if (!matched) return;
+    const el = document.getElementById(sectionAnchorId(matched.id));
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [loading, sections, categoryParam]);
 
   if (loading) {
     return (
@@ -203,181 +186,166 @@ export default function CatalogPage() {
   return (
     <main
       style={{
-        fontFamily: "sans-serif",
         backgroundColor: "#f8fafc",
         minHeight: "100vh",
-        paddingBottom: "60px",
+        fontFamily: "sans-serif",
+        paddingBottom: "80px",
       }}
     >
       <section
         style={{
-          position: "relative",
-          height: "300px",
-          backgroundImage: `url(${displayData.imageUrl || DEFAULT_HERO.imageUrl})`,
+          backgroundColor: "#0f172a",
+          color: "white",
+          padding: "70px 20px",
+          textAlign: "center",
+          backgroundImage: `url('${HERO.imageUrl}')`,
           backgroundSize: "cover",
           backgroundPosition: "center",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          backgroundBlendMode: "overlay",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(15, 23, 42, 0.6)",
-          }}
-        />
         <h1
           style={{
-            position: "relative",
-            color: "white",
-            fontSize: "3rem",
+            fontSize: "clamp(2rem, 5vw, 3.5rem)",
             fontWeight: "bold",
-            margin: 0,
-            textShadow: "0 4px 6px rgba(0,0,0,0.5)",
-            textAlign: "center",
+            margin: "0 0 15px 0",
+            textShadow: "0 2px 10px rgba(0,0,0,0.5)",
           }}
         >
-          {displayData.name}
+          {HERO.title}
         </h1>
-      </section>
-
-      <section
-        style={{
-          maxWidth: "900px",
-          margin: "40px auto",
-          padding: "0 20px",
-          textAlign: "center",
-        }}
-      >
-        <p style={{ fontSize: "1.2rem", color: "#475569", lineHeight: "1.8" }}>
-          {displayData.description}
+        <p
+          style={{
+            fontSize: "1.2rem",
+            maxWidth: "700px",
+            margin: "0 auto",
+            lineHeight: "1.6",
+            textShadow: "0 1px 5px rgba(0,0,0,0.5)",
+          }}
+        >
+          {HERO.description}
         </p>
       </section>
 
-      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px" }}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "30px",
-          }}
-        >
-          {sortedProducts.map((product) => (
-            <Link
-              href={`/products/${product.id}`}
-              key={product.id}
-              style={{ textDecoration: "none" }}
-            >
-              <div
+      <div
+        style={{ maxWidth: "1300px", margin: "0 auto", padding: "40px 20px" }}
+      >
+        {sections.length > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "15px",
+              marginBottom: "60px",
+              justifyContent: "center",
+            }}
+          >
+            {sections.map((cat) => (
+              <a
+                key={cat.id}
+                href={`#${sectionAnchorId(cat.id)}`}
                 style={{
+                  textDecoration: "none",
                   backgroundColor: "white",
-                  borderRadius: "16px",
-                  overflow: "hidden",
-                  boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                  opacity: product.inStock ? 1 : 0.6,
-                  filter: product.inStock ? "none" : "grayscale(50%)",
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                  transition: "transform 0.2s ease",
+                  padding: "12px 25px",
+                  borderRadius: "50px",
+                  color: "#0f172a",
+                  fontWeight: "bold",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                  border: "1px solid #e2e8f0",
+                  transition: "all 0.2s",
                 }}
                 onMouseEnter={(e) => {
-                  if (product.inStock)
-                    e.currentTarget.style.transform = "translateY(-5px)";
+                  e.currentTarget.style.backgroundColor = "#2563eb";
+                  e.currentTarget.style.color = "white";
                 }}
                 onMouseLeave={(e) => {
-                  if (product.inStock)
-                    e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.backgroundColor = "white";
+                  e.currentTarget.style.color = "#0f172a";
                 }}
+              >
+                {cat.name} ↓
+              </a>
+            ))}
+          </div>
+        )}
+
+        {sections.length === 0 ? (
+          <p
+            style={{
+              textAlign: "center",
+              color: "#64748b",
+              fontSize: "1.1rem",
+            }}
+          >
+            Aucune catégorie disponible pour le moment.
+          </p>
+        ) : (
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "80px" }}
+          >
+            {sections.map((category) => (
+              <section
+                key={category.id}
+                id={sectionAnchorId(category.id)}
+                style={{ scrollMarginTop: "40px" }}
               >
                 <div
                   style={{
-                    height: "200px",
-                    backgroundImage: `url(${product.imageUrl || PLACEHOLDER_IMG})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    backgroundColor: "#e2e8f0",
-                  }}
-                />
-
-                <div
-                  style={{
-                    padding: "20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    flexGrow: 1,
+                    borderBottom: "3px solid #e2e8f0",
+                    paddingBottom: "15px",
+                    marginBottom: "30px",
                   }}
                 >
                   <h2
                     style={{
-                      fontSize: "1.3rem",
+                      fontSize: "2.2rem",
                       color: "#0f172a",
-                      fontWeight: "bold",
-                      marginBottom: "10px",
-                      margin: 0,
+                      margin: "0 0 10px 0",
                     }}
                   >
-                    {product.name}
+                    {category.name}
                   </h2>
-                  <span
+                  {category.description ? (
+                    <p
+                      style={{
+                        color: "#64748b",
+                        margin: 0,
+                        fontSize: "1.1rem",
+                        maxWidth: "800px",
+                      }}
+                    >
+                      {category.description}
+                    </p>
+                  ) : null}
+                </div>
+
+                {category.products.length === 0 ? (
+                  <p style={{ color: "#64748b" }}>
+                    Aucun produit dans cette catégorie pour le moment.
+                  </p>
+                ) : (
+                  <div
                     style={{
-                      fontSize: "1.2rem",
-                      color: "#2563eb",
-                      fontWeight: "bold",
-                      marginBottom: "15px",
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fill, minmax(280px, 1fr))",
+                      gap: "30px",
                     }}
                   >
-                    {Number.isFinite(product.price)
-                      ? product.price.toLocaleString("fr-FR")
-                      : "—"}{" "}
-                    €
-                  </span>
-
-                  {!product.inStock && (
-                    <div
-                      style={{
-                        marginTop: "auto",
-                        padding: "8px",
-                        backgroundColor: "#fee2e2",
-                        color: "#ef4444",
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        borderRadius: "8px",
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      En rupture de stock
-                    </div>
-                  )}
-
-                  {product.inStock && (
-                    <button
-                      type="button"
-                      style={{
-                        marginTop: "auto",
-                        backgroundColor: "#0f172a",
-                        color: "white",
-                        border: "none",
-                        padding: "12px",
-                        borderRadius: "8px",
-                        fontWeight: "bold",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Voir le produit
-                    </button>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+                    {category.products.map((product) => (
+                      <CatalogProductCard
+                        key={product.id}
+                        product={product}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

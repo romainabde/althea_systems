@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -239,18 +240,30 @@ public class HomeService {
         return homepageTextRepository.findAll()
                 .stream()
                 .findFirst()
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("HomepageText introuvable"));
+                .orElseGet(() -> {
+                    HomepageText empty = new HomepageText();
+                    empty.setContent("");
+                    empty.setActive(true);
+                    return empty;
+                });
     }
 
     @Transactional
     public HomepageText updateHomepageText(HomepageTextUpdateRequest request) {
+        HomepageText entity = homepageTextRepository.findAll()
+                .stream()
+                .findFirst()
+                .orElseGet(HomepageText::new);
 
-        HomepageText entity = getHomepageText();
-
+        boolean isNew = entity.getId() == null;
         homepageTextMapper.updateEntity(entity, request);
 
-        return entity;
+        if (isNew) {
+            entity.setCreatedAt(LocalDateTime.now());
+        }
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        return homepageTextRepository.save(entity);
     }
 
     // Top Products
@@ -286,13 +299,29 @@ public class HomeService {
         return footerRepository.findAll()
                 .stream()
                 .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Footer introuvable"));
+                .orElseGet(() -> {
+                    Footer empty = new Footer();
+                    empty.setContent("");
+                    empty.setActive(true);
+                    return empty;
+                });
     }
 
     @Transactional
     public Footer updateFooter(FooterUpdateRequest request) {
-        Footer footer = getFooter();
+        Footer footer = footerRepository.findAll()
+                .stream()
+                .findFirst()
+                .orElseGet(Footer::new);
+
+        boolean isNew = footer.getId() == null;
         footerMapper.updateEntity(footer, request);
-        return footer;
+
+        if (isNew) {
+            footer.setCreatedAt(LocalDateTime.now());
+        }
+        footer.setUpdatedAt(LocalDateTime.now());
+
+        return footerRepository.save(footer);
     }
 }
