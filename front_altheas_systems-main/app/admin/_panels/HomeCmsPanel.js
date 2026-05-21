@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "../admin.module.css";
 import DataTable from "../_components/DataTable";
 import ConfirmDialog from "../_components/ConfirmDialog";
-import { homeCmsApi } from "../_services/adminApi";
+import { categoriesApi, homeCmsApi, productsApi } from "../_services/adminApi";
+import { API_CONFIG } from "../../../services/config";
 
 // =============================================================================
 // HomeCmsPanel
 // -----------------------------------------------------------------------------
 // 4 sous-onglets :
 //   - Carrousel       : entité CarouselSection { id, title, text, imageUrl,
-//                       linkUrl, displayOrder, active }
+//                       linkUrl, linkTargetType, targetCategoryId, targetProductId,
+//                       displayOrder, active }
 //   - Texte d'accueil : entité HomepageText    { id, content, active }
 //   - Top produits    : entité TopProduct      { id, product, displayOrder, active }
 //   - Footer          : entité Footer          { id, content, active }
@@ -23,6 +25,68 @@ const SUB_TABS = [
   { id: "top-products", label: "Top produits" },
   { id: "footer", label: "Footer" },
 ];
+
+const LINK_TARGET_OPTIONS = [
+  { value: "CUSTOM", label: "URL libre" },
+  { value: "CATEGORY", label: "Page catégorie" },
+  { value: "PRODUCT", label: "Page produit" },
+];
+
+function normalizeCarouselLinkTargetType(raw) {
+  const t =
+    raw != null && String(raw).trim() !== ""
+      ? String(raw).trim().toUpperCase()
+      : "CUSTOM";
+  return LINK_TARGET_OPTIONS.some((o) => o.value === t) ? t : "CUSTOM";
+}
+
+/** Liste plate { id, name } depuis GET /admin/products (ProductWithImagesDto[]). */
+function flattenProductsForCarousel(apiList) {
+  if (!Array.isArray(apiList)) return [];
+  return apiList
+    .map((entry) => {
+      const p = entry?.product ?? entry;
+      if (p?.id == null) return null;
+      return { id: p.id, name: p.name ?? "" };
+    })
+    .filter(Boolean);
+}
+
+function buildCarouselFormState(initialValues) {
+  const lt = normalizeCarouselLinkTargetType(initialValues.linkTargetType);
+  return {
+    title: initialValues.title ?? "",
+    text: initialValues.text ?? "",
+    imageUrl: initialValues.imageUrl ?? "",
+    linkUrl: initialValues.linkUrl ?? "",
+    linkTargetType: lt,
+    targetCategoryId:
+      initialValues.targetCategoryId != null &&
+      initialValues.targetCategoryId !== ""
+        ? String(initialValues.targetCategoryId)
+        : "",
+    targetProductId:
+      initialValues.targetProductId != null &&
+      initialValues.targetProductId !== ""
+        ? String(initialValues.targetProductId)
+        : "",
+    displayOrder: initialValues.displayOrder ?? 1,
+    active: initialValues.active ?? true,
+  };
+}
+
+/** URL absolue pour aperçu : chemins relatifs via API catalogue (/images/…). */
+function carouselPreviewSrc(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== "string") return null;
+  const u = imageUrl.trim();
+  if (!u) return null;
+  if (u.startsWith("http://") || u.startsWith("https://")) return u;
+  if (u.startsWith("/")) {
+    const base = API_CONFIG.catalogBaseUrl.replace(/\/$/, "");
+    return `${base}${u}`;
+  }
+  return u;
+}
 
 export default function HomeCmsPanel() {
   const [tab, setTab] = useState("carousel");
@@ -139,10 +203,71 @@ function CarouselSubPanel() {
     }
   }
 
+  function toPayload(values) {
+    const t = values.linkTargetType || "CUSTOM";
+    const catId =
+      t === "CATEGORY" &&
+      values.targetCategoryId !== "" &&
+      values.targetCategoryId != null
+        ? Number(values.targetCategoryId)
+        : null;
+    const prodId =
+      t === "PRODUCT" &&
+      values.targetProductId !== "" &&
+      values.targetProductId != null
+        ? Number(values.targetProductId)
+        : null;
+    const linkTrim =
+      values.linkUrl != null && String(values.linkUrl).trim() !== ""
+        ? String(values.linkUrl).trim()
+        : null;
+    return {
+      title: values.title?.trim() || null,
+      text: values.text ?? null,
+      imageUrl:
+        values.imageUrl != null && String(values.imageUrl).trim() !== ""
+          ? String(values.imageUrl).trim()
+          : null,
+      linkUrl: linkTrim,
+      linkTargetType: t,
+      targetCategoryId: catId,
+      targetProductId: prodId,
+      displayOrder:
+        values.displayOrder === "" || values.displayOrder == null
+          ? null
+          : Number(values.displayOrder),
+      active: values.active === undefined ? true : Boolean(values.active),
+    };
+  }
+
   const columns = [
     { key: "id", label: "ID", width: "70px" },
     { key: "title", label: "Titre" },
-    { key: "linkUrl", label: "Lien" },
+    {
+      key: "linkTargetType",
+      label: "Type lien",
+      width: "100px",
+      accessor: (row) => normalizeCarouselLinkTargetType(row.linkTargetType),
+      render: (row) => {
+        const t = normalizeCarouselLinkTargetType(row.linkTargetType);
+        const short = { CUSTOM: "URL", CATEGORY: "Cat.", PRODUCT: "Prod." };
+        return short[t] ?? t;
+      },
+    },
+    {
+      key: "targetSummary",
+      label: "Cible",
+      width: "90px",
+      render: (row) => {
+        const t = normalizeCarouselLinkTargetType(row.linkTargetType);
+        if (t === "CATEGORY" && row.targetCategoryId != null)
+          return `cat. ${row.targetCategoryId}`;
+        if (t === "PRODUCT" && row.targetProductId != null)
+          return `prd. ${row.targetProductId}`;
+        return "—";
+      },
+    },
+    { key: "linkUrl", label: "Lien (URL)" },
     {
       key: "displayOrder",
       label: "Ordre",
@@ -263,22 +388,29 @@ function CarouselSubPanel() {
 
       {view === "create" && (
         <CarouselForm
+          key="carousel-create"
           mode="create"
           initialValues={{
             title: "",
             text: "",
             imageUrl: "",
             linkUrl: "",
+            linkTargetType: "CUSTOM",
+            targetCategoryId: "",
+            targetProductId: "",
             displayOrder: rows.length + 1,
             active: true,
           }}
           onSubmit={handleCreate}
           onCancel={() => setView("list")}
+          sectionId={null}
+          onCarouselDirty={refresh}
         />
       )}
 
       {view === "edit" && active && (
         <CarouselForm
+          key={`carousel-edit-${active.id}`}
           mode="edit"
           initialValues={active}
           onSubmit={(values) => handleUpdate(active.id, values)}
@@ -286,6 +418,8 @@ function CarouselSubPanel() {
             setView("list");
             setActive(null);
           }}
+          sectionId={active.id}
+          onCarouselDirty={refresh}
         />
       )}
 
@@ -298,44 +432,157 @@ function CarouselSubPanel() {
       />
     </div>
   );
-
-  function toPayload(values) {
-    return {
-      title: values.title?.trim() || null,
-      text: values.text ?? null,
-      imageUrl: values.imageUrl ?? null,
-      linkUrl: values.linkUrl ?? null,
-      displayOrder:
-        values.displayOrder === "" || values.displayOrder == null
-          ? null
-          : Number(values.displayOrder),
-      active: values.active === undefined ? true : Boolean(values.active),
-    };
-  }
 }
 
-function CarouselForm({ initialValues, onSubmit, onCancel, mode }) {
-  const [values, setValues] = useState({
-    title: initialValues.title ?? "",
-    text: initialValues.text ?? "",
-    imageUrl: initialValues.imageUrl ?? "",
-    linkUrl: initialValues.linkUrl ?? "",
-    displayOrder: initialValues.displayOrder ?? 1,
-    active: initialValues.active ?? true,
-  });
+function CarouselForm({
+  initialValues,
+  onSubmit,
+  onCancel,
+  mode,
+  sectionId = null,
+  onCarouselDirty,
+}) {
+  const [values, setValues] = useState(() => buildCarouselFormState(initialValues));
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [optionsLoading, setOptionsLoading] = useState(true);
+  const [formError, setFormError] = useState(null);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const fileRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadOptions() {
+      setOptionsLoading(true);
+      try {
+        const [cats, prods] = await Promise.all([
+          categoriesApi.list(),
+          productsApi.list(),
+        ]);
+        if (!cancelled) {
+          setCategories(Array.isArray(cats) ? cats : []);
+          setProducts(flattenProductsForCarousel(prods));
+        }
+      } catch {
+        if (!cancelled) {
+          setCategories([]);
+          setProducts([]);
+        }
+      } finally {
+        if (!cancelled) setOptionsLoading(false);
+      }
+    }
+    loadOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function update(field, v) {
     setValues((prev) => ({ ...prev, [field]: v }));
   }
 
+  function setLinkTargetType(next) {
+    setValues((prev) => {
+      const n = { ...prev, linkTargetType: next };
+      if (next === "CUSTOM") {
+        n.targetCategoryId = "";
+        n.targetProductId = "";
+      } else if (next === "CATEGORY") {
+        n.targetProductId = "";
+      } else if (next === "PRODUCT") {
+        n.targetCategoryId = "";
+      }
+      return n;
+    });
+  }
+
+  async function handleUploadCarouselFile() {
+    const file = fileRef.current?.files?.[0];
+    if (!file || sectionId == null) return;
+    setFormError(null);
+    setUploadBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const updated = await homeCmsApi.uploadCarouselSectionImage(sectionId, fd);
+      update("imageUrl", updated.imageUrl ?? "");
+      fileRef.current.value = "";
+      onCarouselDirty?.();
+    } catch (err) {
+      setFormError(String(err.message ?? err));
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
+  async function handleDeleteCarouselMongoImage() {
+    if (sectionId == null) return;
+    setFormError(null);
+    setUploadBusy(true);
+    try {
+      const updated = await homeCmsApi.deleteCarouselSectionImage(sectionId);
+      update("imageUrl", updated.imageUrl ?? "");
+      onCarouselDirty?.();
+    } catch (err) {
+      setFormError(String(err.message ?? err));
+    } finally {
+      setUploadBusy(false);
+    }
+  }
+
   function submit(e) {
     e.preventDefault();
+    setFormError(null);
     if (!values.title?.trim()) return;
+
+    const t = values.linkTargetType || "CUSTOM";
+    if (t === "CUSTOM" && !(values.linkUrl?.trim())) {
+      setFormError(
+        'Pour « URL libre », renseignez le champ lien (obligatoire côté serveur).'
+      );
+      return;
+    }
+    if (
+      t === "CATEGORY" &&
+      (values.targetCategoryId === "" || values.targetCategoryId == null)
+    ) {
+      setFormError("Choisissez une catégorie.");
+      return;
+    }
+    if (
+      t === "PRODUCT" &&
+      (values.targetProductId === "" || values.targetProductId == null)
+    ) {
+      setFormError("Choisissez un produit.");
+      return;
+    }
+
     onSubmit(values);
   }
 
+  const hintStyle = {
+    fontSize: "0.82rem",
+    color: "#64748b",
+    marginTop: "0.35rem",
+    lineHeight: 1.35,
+  };
+
   return (
     <form onSubmit={submit}>
+      {formError && (
+        <div
+          className={styles.bulkBar}
+          style={{
+            background: "#fee2e2",
+            borderColor: "#dc2626",
+            color: "#991b1b",
+            marginBottom: "1rem",
+          }}
+        >
+          ⚠ {formError}
+        </div>
+      )}
       <div className={styles.formGrid}>
         <Field label="Titre *">
           <input
@@ -345,23 +592,165 @@ function CarouselForm({ initialValues, onSubmit, onCancel, mode }) {
             required
           />
         </Field>
-        <Field label="URL image *">
+        <Field label="URL image (manuel – optionnel)">
           <input
             className={styles.input}
             value={values.imageUrl}
             onChange={(e) => update("imageUrl", e.target.value)}
-            placeholder="/images/banner.jpg"
-            required
+            placeholder="/images/… ou https://…"
           />
+          <p style={hintStyle}>
+            Laissez vide puis créez la section : en modification, vous pouvez envoyer
+            un fichier (Mongo, lien <code>/images/…</code>), comme pour les produits.
+          </p>
         </Field>
-        <Field label="Lien (URL) *">
-          <input
-            className={styles.input}
-            value={values.linkUrl}
-            onChange={(e) => update("linkUrl", e.target.value)}
-            required
-          />
+        {sectionId != null && (
+          <Field label="Fichier image (Mongo)">
+            <div
+              className={styles.btnRow}
+              style={{
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                alignItems: "center",
+              }}
+            >
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                disabled={uploadBusy}
+              />
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnSm} ${styles.btnPrimary}`}
+                disabled={uploadBusy}
+                onClick={handleUploadCarouselFile}
+              >
+                {uploadBusy ? "…" : "Envoyer le fichier"}
+              </button>
+              {typeof values.imageUrl === "string" &&
+                values.imageUrl.startsWith("/images/") && (
+                  <button
+                    type="button"
+                    className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
+                    disabled={uploadBusy}
+                    onClick={handleDeleteCarouselMongoImage}
+                  >
+                    Retirer l&apos;image Mongo
+                  </button>
+                )}
+            </div>
+          </Field>
+        )}
+        {carouselPreviewSrc(values.imageUrl) && (
+          <Field label="Aperçu">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={carouselPreviewSrc(values.imageUrl)}
+              alt=""
+              style={{
+                maxWidth: "100%",
+                maxHeight: "180px",
+                objectFit: "contain",
+                borderRadius: "8px",
+                border: "1px solid #e2e8f0",
+              }}
+            />
+          </Field>
+        )}
+        <Field label="Destination du clic *">
+          <select
+            className={styles.select}
+            value={values.linkTargetType}
+            onChange={(e) => setLinkTargetType(e.target.value)}
+          >
+            {LINK_TARGET_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <p style={hintStyle}>
+            URL libre : lien exact. Catégorie / produit : le catalogue peut
+            compléter l’URL si vous laissez le champ lien vide (
+            <code>/categories/…</code>, <code>/products/…</code>).
+          </p>
         </Field>
+
+        {values.linkTargetType === "CUSTOM" && (
+          <Field label="Lien (URL) *">
+            <input
+              className={styles.input}
+              value={values.linkUrl}
+              onChange={(e) => update("linkUrl", e.target.value)}
+              placeholder="https://… ou /chemin-interne"
+              required
+            />
+          </Field>
+        )}
+
+        {values.linkTargetType === "CATEGORY" && (
+          <Field label="Catégorie *">
+            <select
+              className={styles.select}
+              disabled={optionsLoading}
+              value={values.targetCategoryId === "" ? "" : String(values.targetCategoryId)}
+              onChange={(e) => update("targetCategoryId", e.target.value)}
+              required
+            >
+              <option value="">
+                {optionsLoading ? "Chargement…" : "— Choisir une catégorie —"}
+              </option>
+              {categories.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  #{c.id} — {c.name ?? "?"}
+                </option>
+              ))}
+            </select>
+            <p style={hintStyle}>
+              Optionnel : URL personnalisée ci‑dessous (sinon dérivée du front /
+              catalogue).
+            </p>
+          </Field>
+        )}
+
+        {values.linkTargetType === "PRODUCT" && (
+          <Field label="Produit *">
+            <select
+              className={styles.select}
+              disabled={optionsLoading}
+              value={values.targetProductId === "" ? "" : String(values.targetProductId)}
+              onChange={(e) => update("targetProductId", e.target.value)}
+              required
+            >
+              <option value="">
+                {optionsLoading ? "Chargement…" : "— Choisir un produit —"}
+              </option>
+              {products.map((p) => (
+                <option key={p.id} value={String(p.id)}>
+                  #{p.id} — {p.name || "(sans nom)"}
+                </option>
+              ))}
+            </select>
+            <p style={hintStyle}>
+              Liste chargée depuis le catalogue admin (tous les produits).
+              Optionnel : URL personnalisée ci‑dessous.
+            </p>
+          </Field>
+        )}
+
+        {(values.linkTargetType === "CATEGORY" ||
+          values.linkTargetType === "PRODUCT") && (
+          <Field label="Lien (URL) — optionnel">
+            <input
+              className={styles.input}
+              value={values.linkUrl}
+              onChange={(e) => update("linkUrl", e.target.value)}
+              placeholder="Laisser vide pour lien automatique vers la page"
+            />
+          </Field>
+        )}
+
         <Field label="Ordre d'affichage *">
           <input
             type="number"

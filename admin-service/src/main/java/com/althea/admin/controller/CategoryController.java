@@ -5,8 +5,10 @@ import com.althea.admin.dto.category.CategoryUpdateRequest;
 import com.althea.admin.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/admin/categories")
@@ -43,6 +45,20 @@ public class CategoryController {
             @Valid @RequestBody CategoryUpdateRequest request
     ) {
         return ResponseEntity.ok(service.update(id, request));
+    }
+
+    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadImage(
+            @PathVariable Integer id,
+            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "altText", required = false) String altText
+    ) {
+        return ResponseEntity.ok(service.uploadImage(id, file, altText));
+    }
+
+    @DeleteMapping("/{id}/image")
+    public ResponseEntity<?> deleteImage(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.deleteUploadedImage(id));
     }
 
     @DeleteMapping("/{id}")

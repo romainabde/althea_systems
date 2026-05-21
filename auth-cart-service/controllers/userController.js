@@ -57,7 +57,13 @@ exports.updateProfile = async (req, res) => {
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: updatedData,
-            select: { id: true, fullName: true, email: true, isEmailConfirmed: true }
+            select: {
+                id: true,
+                fullName: true,
+                email: true,
+                isEmailConfirmed: true,
+                role: true,
+            }
         });
 
         res.status(200).json({ message: "Profil mis à jour !", user: updatedUser });

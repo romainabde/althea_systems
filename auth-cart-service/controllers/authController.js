@@ -29,6 +29,16 @@ function frontendBaseUrl() {
     return (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
 }
 
+/** Champs utilisateur renvoyés au front après login / session (inclut le rôle pour l’UI). */
+function publicUserPayload(user) {
+    return {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+    };
+}
+
 // --- 1. L'INSCRIPTION ---
 exports.register = async (req, res) => {
     try {
@@ -110,7 +120,7 @@ exports.confirmEmail = async (req, res) => {
             return res.status(200).json({
                 message: "Votre compte est déjà confirmé. Vous êtes connecté.",
                 token: sessionToken,
-                user: { id: user.id, fullName: user.fullName, email: user.email },
+                user: publicUserPayload(user),
             });
         }
 
@@ -128,7 +138,7 @@ exports.confirmEmail = async (req, res) => {
         res.status(200).json({
             message: "Votre compte est confirmé. Bienvenue sur Althea Systems !",
             token: sessionToken,
-            user: { id: user.id, fullName: user.fullName, email: user.email },
+            user: publicUserPayload(user),
         });
     } catch (error) {
         console.error("🚨 ERREUR CONFIRMATION EMAIL :", error);
@@ -265,11 +275,7 @@ exports.login = async (req, res) => {
         res.status(200).json({
             message: "Connexion réussie ! Vos données ont été synchronisées.",
             token: token,
-            user: { 
-                id: user.id, 
-                fullName: user.fullName, 
-                email: user.email 
-            }
+            user: publicUserPayload(user)
         });
 
     } catch (error) {

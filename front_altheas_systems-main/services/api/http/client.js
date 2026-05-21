@@ -50,10 +50,16 @@ export async function httpClient(endpoint, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
+  // Panier / adresses / commandes : envoyer X-Session-Id même si un Bearer est présent.
+  // Si le JWT est expiré ou invalide, optionalAuth ne remplit pas req.user : sans cet en-tête
+  // le backend renvoie 400 « Non identifié… » alors qu’on peut retomber sur la session invité.
+  const alreadyHasSessionHeader =
+    !!(headers["X-Session-Id"] ?? headers["x-session-id"]);
   if (
-    (endpoint.startsWith("/api/cart") || endpoint.startsWith("/api/addresses")) &&
-    !token &&
-    !headers["X-Session-Id"]
+    (endpoint.startsWith("/api/cart") ||
+      endpoint.startsWith("/api/addresses") ||
+      endpoint.startsWith("/api/orders")) &&
+    !alreadyHasSessionHeader
   ) {
     const sid = getOrCreateGuestSessionId();
     if (sid) headers["X-Session-Id"] = sid;

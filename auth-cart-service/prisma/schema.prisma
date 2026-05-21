@@ -1,13 +1,14 @@
-// Schéma unique PostgreSQL (Neon, même base que admin/catalog) : auth, panier, commandes,
-// contact et chat support.
+// Schéma PostgreSQL (Neon) — même base que admin-service / catalog / support aligné projet.
+//
+// VARIABLE : DATABASE_URL (voir .env.example). Ne pas utiliser SQLite en prod.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Cart {

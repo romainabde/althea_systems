@@ -1,52 +1,57 @@
 import { API_CONFIG } from "../config";
 import { httpClient } from "./http/client";
-import { API_ROUTES } from "../routes";
-import { checkoutStateMock, checkoutSummaryMock } from "./mocks/checkout.mock";
 
-let mockCheckoutState = structuredClone(checkoutStateMock);
-
-export async function initCheckout(payload = {}) {
+/**
+ * Crée une commande en attente de paiement (auth-cart-service).
+ * POST /api/orders/checkout — body : { addressId, email? } (email obligatoire invité ; le front force login au checkout).
+ *
+ * @param {{ addressId: number; email?: string }} payload
+ * @returns {Promise<{ message?: string; order: object }>}
+ */
+export async function postCreateOrder(payload) {
   if (API_CONFIG.useMocks) {
-    mockCheckoutState = {
-      ...mockCheckoutState,
-      step: "customer",
-      ...payload,
+    return {
+      message: "Mock commande",
+      order: {
+        id: 9001,
+        totalAmount: 199,
+        status: "PENDING",
+        items: [],
+      },
     };
-    return mockCheckoutState;
   }
 
-  return httpClient(API_ROUTES.checkout.init, {
+  const body = { addressId: Number(payload.addressId) };
+  if (payload.email?.trim()) {
+    body.email = payload.email.trim();
+  }
+
+  return httpClient("/api/orders/checkout", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
 }
 
-export async function fetchCheckoutState() {
-  if (API_CONFIG.useMocks) {
-    return mockCheckoutState;
-  }
-  return httpClient(API_ROUTES.checkout.state);
-}
-
-export async function fetchCheckoutSummary() {
-  if (API_CONFIG.useMocks) {
-    return checkoutSummaryMock;
-  }
-  return httpClient(API_ROUTES.checkout.summary);
-}
-
-export async function confirmCheckout(payload = {}) {
+/**
+ * Confirme le paiement Stripe et marque la commande comme payée.
+ * POST /api/orders/pay — body : { orderId, paymentMethodId }
+ *
+ * @param {{ orderId: number; paymentMethodId: string }} payload
+ * @returns {Promise<{ message?: string; transactionId?: string }>}
+ */
+export async function postPayOrder(payload) {
   if (API_CONFIG.useMocks) {
     return {
-      success: true,
-      orderId: "order_001",
-      status: "paid",
-      ...payload,
+      message: "Paiement mock OK",
+      transactionId: "pi_mock_" + Date.now(),
     };
   }
 
-  return httpClient(API_ROUTES.checkout.confirm, {
+  return httpClient("/api/orders/pay", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      orderId: Number(payload.orderId),
+      paymentMethodId: String(payload.paymentMethodId || "").trim(),
+    }),
   });
 }

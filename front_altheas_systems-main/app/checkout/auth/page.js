@@ -1,4 +1,9 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getAuthToken } from "../../../services/authSession";
 
 const choiceCardStyle = {
   border: "1px solid #ddd",
@@ -23,19 +28,36 @@ const actionButtonStyle = {
 };
 
 export default function CheckoutAuthPage() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (getAuthToken()) {
+      router.replace("/checkout/address");
+      return;
+    }
+    setChecking(false);
+  }, [router]);
+
+  if (checking) {
+    return (
+      <section style={{ padding: "2rem", textAlign: "center", color: "#64748b" }}>
+        <p style={{ margin: 0 }}>Redirection…</p>
+      </section>
+    );
+  }
+
   return (
     <section style={{ padding: "1rem", maxWidth: "540px", margin: "0 auto" }}>
       <h1 style={{ marginBottom: "0.5rem" }}>Finaliser la commande</h1>
       <p style={{ marginTop: 0, color: "#555" }}>
-        Choisissez comment continuer votre checkout.
+        Connectez-vous ou créez un compte pour continuer.
       </p>
 
       <div style={{ display: "grid", gap: "1rem", marginTop: "1.25rem" }}>
         <article style={choiceCardStyle}>
           <h2 style={{ margin: 0, fontSize: "1rem" }}>Connexion</h2>
-          <p style={{ margin: 0, color: "#555" }}>
-            J’ai déjà un compte.
-          </p>
+          <p style={{ margin: 0, color: "#555" }}>J&apos;ai déjà un compte.</p>
           <Link href="/login?next=%2Fcheckout%2Faddress" style={actionButtonStyle}>
             Se connecter
           </Link>
@@ -43,21 +65,9 @@ export default function CheckoutAuthPage() {
 
         <article style={choiceCardStyle}>
           <h2 style={{ margin: 0, fontSize: "1rem" }}>Inscription</h2>
-          <p style={{ margin: 0, color: "#555" }}>
-            Je crée un compte pour continuer.
-          </p>
+          <p style={{ margin: 0, color: "#555" }}>Je crée un compte pour continuer.</p>
           <Link href="/register?next=%2Fcheckout%2Faddress" style={actionButtonStyle}>
             Créer un compte
-          </Link>
-        </article>
-
-        <article style={choiceCardStyle}>
-          <h2 style={{ margin: 0, fontSize: "1rem" }}>Continuer en invité</h2>
-          <p style={{ margin: 0, color: "#555" }}>
-            Je continue sans créer de compte.
-          </p>
-          <Link href="/checkout/address" style={actionButtonStyle}>
-            Continuer en invité
           </Link>
         </article>
       </div>

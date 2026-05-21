@@ -1,6 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 
-// Connexion standard à ton PostgreSQL local
+// Connexion Postgres (Neon) via DATABASE_URL — voir prisma/schema.prisma et .env
 const prisma = new PrismaClient();
 
 module.exports = prisma;
