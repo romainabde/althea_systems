@@ -2,13 +2,17 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   fetchAllCategories,
   searchCatalogProducts,
 } from "../../services/api/catalogApi";
+import SearchProductCard from "../../components/catalog/SearchProductCard";
 
 const PLACEHOLDER_IMG =
   "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=600";
+
+const MAX_BUDGET = 300000;
 
 function catalogAssetUrl(path) {
   if (!path) return "";
@@ -19,7 +23,6 @@ function catalogAssetUrl(path) {
   return `${trimmed}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-/* Distance de Levenshtein (pertinence côté client) */
 const getEditDistance = (a, b) => {
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
@@ -54,13 +57,13 @@ const calculateMatchScore = (query, text) => {
   return 0;
 };
 
-/** Tri serveur Spring ProductSearchRequest.sort */
 const SORT_API = {
   price_asc: "price_asc",
   price_desc: "price_desc",
   date_new: "newest",
   date_old: "oldest",
   stock_first: "availability",
+  newest: "newest",
 };
 
 function mapRowToCard(row) {
@@ -68,33 +71,56 @@ function mapRowToCard(row) {
   const imgs = row.images || [];
   const url = catalogAssetUrl(imgs[0]?.url);
   const stock = p.stock != null ? Number(p.stock) : 0;
+  const priority = p.displayPriority ?? 0;
   return {
     id: p.id,
     name: p.name,
     price: Number(p.price),
     inStock: stock > 0,
+    stockQuantity: stock,
     description: p.description || "",
     imageUrl: url || PLACEHOLDER_IMG,
+    categoryName: p.categoryName || "",
+    isPriority: priority >= 70,
   };
 }
 
+const inputStyle = {
+  width: "100%",
+  padding: "10px 12px",
+  borderRadius: "10px",
+  border: "1px solid #e2e8f0",
+  fontSize: "0.95rem",
+  boxSizing: "border-box",
+  outline: "none",
+};
+
 export default function SearchPage() {
+  const searchParams = useSearchParams();
+  const urlQuery =
+    searchParams.get("query")?.trim() ||
+    searchParams.get("q")?.trim() ||
+    "";
+
   const [categories, setCategories] = useState([]);
   const [categoriesError, setCategoriesError] = useState(null);
 
-  const [searchTitle, setSearchTitle] = useState("");
+  const [searchTitle, setSearchTitle] = useState(urlQuery);
   const [searchDesc, setSearchDesc] = useState("");
-  const [searchSpecs, setSearchSpecs] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
+  const [maxPrice, setMaxPrice] = useState(MAX_BUDGET);
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [rawRows, setRawRows] = useState([]);
   const [totalElements, setTotalElements] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (urlQuery) setSearchTitle(urlQuery);
+  }, [urlQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,20 +149,18 @@ export default function SearchPage() {
         setLoading(true);
         setError(null);
         try {
-          const descCombined = [searchDesc, searchSpecs]
-            .filter(Boolean)
-            .join(" ")
-            .trim();
           const apiSort =
-            sortBy === "relevance" ? undefined : SORT_API[sortBy];
+            sortBy === "relevance"
+              ? undefined
+              : SORT_API[sortBy] || SORT_API.newest;
 
           const data = await searchCatalogProducts({
             title: searchTitle.trim(),
-            description: descCombined,
-            minPrice: minPrice === "" ? undefined : minPrice,
-            maxPrice: maxPrice === "" ? undefined : maxPrice,
+            description: searchDesc.trim() || undefined,
+            maxPrice: maxPrice < MAX_BUDGET ? maxPrice : undefined,
             available: inStockOnly ? true : undefined,
-            categories: selectedCategory ? [selectedCategory] : undefined,
+            categories:
+              selectedCategories.length > 0 ? selectedCategories : undefined,
             sort: apiSort,
             page: 0,
             size: 500,
@@ -165,10 +189,8 @@ export default function SearchPage() {
   }, [
     searchTitle,
     searchDesc,
-    searchSpecs,
-    minPrice,
     maxPrice,
-    selectedCategory,
+    selectedCategories,
     inStockOnly,
     sortBy,
   ]);
@@ -184,67 +206,161 @@ export default function SearchPage() {
     if (sortBy !== "relevance") return cards;
 
     const titleQ = searchTitle.trim();
-    const descQ = [searchDesc, searchSpecs].filter(Boolean).join(" ").trim();
+    const descQ = searchDesc.trim();
 
     return [...cards].sort((a, b) => {
       const scoreB = Math.max(
         calculateMatchScore(titleQ, b.name),
-        calculateMatchScore(descQ, b.description),
-        calculateMatchScore(searchSpecs.trim(), b.description)
+        calculateMatchScore(descQ, b.description)
       );
       const scoreA = Math.max(
         calculateMatchScore(titleQ, a.name),
-        calculateMatchScore(descQ, a.description),
-        calculateMatchScore(searchSpecs.trim(), a.description)
+        calculateMatchScore(descQ, a.description)
       );
       return scoreB - scoreA;
     });
-  }, [rawRows, sortBy, searchTitle, searchDesc, searchSpecs]);
+  }, [rawRows, sortBy, searchTitle, searchDesc]);
+
+  function toggleCategory(name) {
+    setSelectedCategories((prev) =>
+      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
+    );
+  }
+
+  function resetFilters() {
+    setSelectedCategories([]);
+    setMaxPrice(MAX_BUDGET);
+    setInStockOnly(false);
+    setSearchDesc("");
+    setSortBy("relevance");
+  }
+
+  const resultsLabel = searchTitle.trim() || "Tous les produits";
+
+  if (loading && rawRows.length === 0 && !error) {
+    return (
+      <main
+        style={{
+          padding: "100px 20px",
+          textAlign: "center",
+          fontFamily: "sans-serif",
+          backgroundColor: "#f8fafc",
+          minHeight: "60vh",
+        }}
+      >
+        Recherche dans le catalogue…
+      </main>
+    );
+  }
 
   return (
     <main
       style={{
+        maxWidth: "1400px",
+        margin: "40px auto",
+        padding: "0 20px 80px",
         fontFamily: "sans-serif",
         backgroundColor: "#f8fafc",
         minHeight: "100vh",
       }}
     >
-      <div
-        style={{
-          backgroundColor: "#0f172a",
-          color: "white",
-          padding: "40px 20px",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: "2.5rem" }}>Recherche Avancée</h1>
-      </div>
+      <section style={{ marginBottom: "40px" }}>
+        <nav
+          style={{
+            marginBottom: "20px",
+            fontSize: "0.85rem",
+            color: "#64748b",
+          }}
+        >
+          <Link href="/" style={{ color: "#64748b", textDecoration: "none" }}>
+            Accueil
+          </Link>{" "}
+          / Recherche
+        </nav>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: "20px",
+            marginBottom: "24px",
+          }}
+        >
+          <h1
+            style={{
+              fontSize: "clamp(1.5rem, 3vw, 2rem)",
+              color: "#0f172a",
+              margin: 0,
+              maxWidth: "700px",
+            }}
+          >
+            Résultats pour &laquo;&nbsp;{resultsLabel}&nbsp;&raquo;
+          </h1>
+
+          <div
+            style={{ display: "flex", gap: "10px", alignItems: "center" }}
+          >
+            <span style={{ fontSize: "0.9rem", color: "#64748b" }}>
+              Trier par
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              style={{
+                padding: "10px 12px",
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
+                outline: "none",
+                backgroundColor: "white",
+              }}
+            >
+              <option value="relevance">Pertinence</option>
+              <option value="newest">Nouveautés (priorité)</option>
+              <option value="price_asc">Prix croissant</option>
+              <option value="price_desc">Prix décroissant</option>
+              <option value="date_new">Plus récents</option>
+              <option value="date_old">Plus anciens</option>
+              <option value="stock_first">En stock d&apos;abord</option>
+            </select>
+          </div>
+        </div>
+
+        <input
+          type="search"
+          placeholder="Rechercher un produit…"
+          value={searchTitle}
+          onChange={(e) => setSearchTitle(e.target.value)}
+          style={{ ...inputStyle, maxWidth: "560px", marginBottom: "12px" }}
+        />
+      </section>
 
       <div
         style={{
-          maxWidth: "1400px",
-          margin: "40px auto",
-          padding: "0 20px",
-          display: "flex",
-          gap: "30px",
-          flexWrap: "wrap",
+          display: "grid",
+          gridTemplateColumns: "minmax(260px, 300px) 1fr",
+          gap: "40px",
+          alignItems: "start",
         }}
+        className="search-layout"
       >
         <aside
           style={{
-            flex: "1 1 300px",
+            alignSelf: "start",
+            position: "sticky",
+            top: "100px",
             backgroundColor: "white",
-            padding: "20px",
-            borderRadius: "12px",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-            height: "fit-content",
+            borderRadius: "16px",
+            border: "1px solid #e2e8f0",
+            padding: "24px",
           }}
         >
           <h2
             style={{
-              fontSize: "1.2rem",
-              marginBottom: "20px",
-              color: "#1e293b",
+              fontSize: "1.1rem",
+              color: "#0f172a",
+              margin: "0 0 20px 0",
             }}
           >
             Filtres
@@ -256,126 +372,166 @@ export default function SearchPage() {
             </p>
           )}
 
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "15px" }}
-          >
-            <input
-              type="text"
-              placeholder="Titre du produit..."
-              value={searchTitle}
-              onChange={(e) => setSearchTitle(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              type="text"
-              placeholder="Description..."
-              value={searchDesc}
-              onChange={(e) => setSearchDesc(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              type="text"
-              placeholder="Mot-clé (description / fiche)..."
-              value={searchSpecs}
-              onChange={(e) => setSearchSpecs(e.target.value)}
-              style={inputStyle}
-            />
-
-            <div style={{ display: "flex", gap: "10px" }}>
-              <input
-                type="number"
-                placeholder="Prix Min"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                placeholder="Prix Max"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                style={inputStyle}
-              />
-            </div>
-
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              style={inputStyle}
+          <div style={{ marginBottom: "32px" }}>
+            <h3
+              style={{
+                fontSize: "1rem",
+                marginBottom: "16px",
+                borderBottom: "1px solid #f1f5f9",
+                paddingBottom: "10px",
+                color: "#334155",
+              }}
             >
-              <option value="">Toutes les catégories</option>
-              {sortedCategories.map((c) => (
-                <option key={String(c.id)} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
+              Catégories
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              {sortedCategories.length === 0 ? (
+                <span style={{ fontSize: "0.9rem", color: "#94a3b8" }}>
+                  Aucune catégorie
+                </span>
+              ) : (
+                sortedCategories.map((cat) => (
+                  <label
+                    key={String(cat.id)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                      fontSize: "0.95rem",
+                      color: "#475569",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedCategories.includes(cat.name)}
+                      onChange={() => toggleCategory(cat.name)}
+                      style={{ width: "18px", height: "18px" }}
+                    />
+                    {cat.name}
+                  </label>
+                ))
+              )}
+            </div>
+          </div>
 
+          <div style={{ marginBottom: "32px" }}>
+            <h3
+              style={{
+                fontSize: "1rem",
+                marginBottom: "16px",
+                borderBottom: "1px solid #f1f5f9",
+                paddingBottom: "10px",
+                color: "#334155",
+              }}
+            >
+              Budget maximum
+            </h3>
+            <p
+              style={{
+                fontWeight: "bold",
+                color: "#2563eb",
+                marginBottom: "10px",
+              }}
+            >
+              {maxPrice.toLocaleString("fr-FR")} €
+            </p>
+            <input
+              type="range"
+              min="0"
+              max={MAX_BUDGET}
+              step="500"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(Number(e.target.value))}
+              style={{ width: "100%", cursor: "pointer" }}
+            />
+          </div>
+
+          <div style={{ marginBottom: "32px" }}>
             <label
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
+                gap: "12px",
                 cursor: "pointer",
                 fontWeight: "bold",
+                color: "#334155",
               }}
             >
               <input
                 type="checkbox"
                 checked={inStockOnly}
                 onChange={(e) => setInStockOnly(e.target.checked)}
+                style={{ width: "20px", height: "20px" }}
               />
-              Produits disponibles uniquement
+              En stock uniquement
             </label>
           </div>
-        </aside>
 
-        <section style={{ flex: "3 1 600px" }}>
-          <div
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
             style={{
-              backgroundColor: "white",
-              padding: "15px 20px",
-              borderRadius: "12px",
-              marginBottom: "20px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: "15px",
+              width: "100%",
+              padding: "10px",
+              marginBottom: showAdvanced ? "12px" : "16px",
+              backgroundColor: "transparent",
+              border: "1px solid #e2e8f0",
+              borderRadius: "10px",
+              color: "#64748b",
+              fontWeight: "600",
+              cursor: "pointer",
             }}
           >
-            <span style={{ fontWeight: "bold", color: "#64748b" }}>
-              {loading
-                ? "Recherche…"
-                : `${totalElements} produit(s) trouvé(s)${
-                    totalElements > filteredResults.length
-                      ? ` (${filteredResults.length} affichés)`
-                      : ""
-                  }`}
-            </span>
+            {showAdvanced ? "Masquer les filtres avancés" : "Filtres avancés"}
+          </button>
 
-            <div
-              style={{ display: "flex", alignItems: "center", gap: "10px" }}
-            >
-              <label style={{ fontSize: "0.9rem", color: "#475569" }}>
-                Trier par :
-              </label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{ ...inputStyle, width: "auto", padding: "5px 10px" }}
+          {showAdvanced && (
+            <div style={{ marginBottom: "16px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  color: "#64748b",
+                  marginBottom: "6px",
+                }}
               >
-                <option value="relevance">Pertinence</option>
-                <option value="price_asc">Prix : Croissant</option>
-                <option value="price_desc">Prix : Décroissant</option>
-                <option value="date_new">Nouveautés : Plus récents</option>
-                <option value="date_old">Nouveautés : Plus anciens</option>
-                <option value="stock_first">
-                  Disponibilité : En stock d&apos;abord
-                </option>
-              </select>
+                Description / mots-clés
+              </label>
+              <input
+                type="text"
+                placeholder="Description, fiche technique…"
+                value={searchDesc}
+                onChange={(e) => setSearchDesc(e.target.value)}
+                style={inputStyle}
+              />
             </div>
-          </div>
+          )}
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            style={{
+              width: "100%",
+              padding: "12px",
+              backgroundColor: "#f1f5f9",
+              border: "none",
+              borderRadius: "10px",
+              color: "#64748b",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            Réinitialiser les filtres
+          </button>
+        </aside>
+
+        <section style={{ minWidth: 0 }}>
+          <p style={{ color: "#64748b", marginBottom: "20px" }}>
+            {loading
+              ? "Recherche…"
+              : `${totalElements} équipement(s) trouvé(s)`}
+          </p>
 
           {error && (
             <div
@@ -383,102 +539,59 @@ export default function SearchPage() {
                 backgroundColor: "#fef2f2",
                 color: "#b91c1c",
                 padding: "12px 16px",
-                borderRadius: "8px",
-                marginBottom: "16px",
+                borderRadius: "10px",
+                marginBottom: "20px",
               }}
             >
               {error}
             </div>
           )}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-              gap: "20px",
-            }}
-          >
-            {filteredResults.map((p) => (
-              <Link
-                href={`/products/${p.id}`}
-                key={String(p.id)}
-                style={{ textDecoration: "none" }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    padding: "15px",
-                    borderRadius: "12px",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "150px",
-                      backgroundImage: `url(${p.imageUrl})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                      borderRadius: "8px",
-                      marginBottom: "15px",
-                      backgroundColor: "#e2e8f0",
-                    }}
-                  />
-                  <h3
-                    style={{
-                      margin: "0 0 10px 0",
-                      color: "#0f172a",
-                      fontSize: "1.1rem",
-                    }}
-                  >
-                    {p.name}
-                  </h3>
-                  <div
-                    style={{
-                      color: "#2563eb",
-                      fontWeight: "bold",
-                      fontSize: "1.2rem",
-                      marginBottom: "10px",
-                    }}
-                  >
-                    {Number.isFinite(p.price)
-                      ? p.price.toLocaleString("fr-FR")
-                      : "—"}{" "}
-                    €
-                  </div>
-                  <div
-                    style={{
-                      marginTop: "auto",
-                      fontSize: "0.85rem",
-                      color: p.inStock ? "#16a34a" : "#dc2626",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {p.inStock ? "● En stock" : "○ Rupture de stock"}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-
-          {!loading && filteredResults.length === 0 && (
-            <div style={{ textAlign: "center", padding: "100px", color: "#64748b" }}>
-              <h3>Aucun résultat ne correspond à vos filtres.</h3>
+          {!loading && filteredResults.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "80px 20px",
+                color: "#64748b",
+                backgroundColor: "white",
+                borderRadius: "16px",
+                border: "1px solid #e2e8f0",
+              }}
+            >
+              <h3 style={{ margin: "0 0 8px 0" }}>
+                Aucun résultat ne correspond à vos filtres.
+              </h3>
+              <p style={{ margin: 0 }}>
+                Essayez d&apos;élargir votre recherche ou de réinitialiser les
+                filtres.
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "30px",
+              }}
+            >
+              {filteredResults.map((product) => (
+                <SearchProductCard key={String(product.id)} product={product} />
+              ))}
             </div>
           )}
         </section>
       </div>
+
+      <style jsx global>{`
+        @media (max-width: 900px) {
+          .search-layout {
+            grid-template-columns: 1fr !important;
+          }
+          .search-layout aside {
+            position: static !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px",
-  borderRadius: "8px",
-  border: "1px solid #e2e8f0",
-  fontSize: "0.9rem",
-  boxSizing: "border-box",
-};

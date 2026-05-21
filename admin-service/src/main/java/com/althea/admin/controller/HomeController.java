@@ -4,8 +4,10 @@ import com.althea.admin.dto.home.*;
 import com.althea.admin.service.HomeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/admin/home")
@@ -58,6 +60,20 @@ public class HomeController {
         return ResponseEntity.ok(
                 homeService.updateCarouselSection(id, request)
         );
+    }
+
+    @PostMapping(value = "/carousel/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadCarouselSectionImage(
+            @PathVariable Integer id,
+            @RequestPart("file") MultipartFile file,
+            @RequestPart(value = "altText", required = false) String altText
+    ) {
+        return ResponseEntity.ok(homeService.uploadCarouselSectionImage(id, file, altText));
+    }
+
+    @DeleteMapping("/carousel/{id}/image")
+    public ResponseEntity<?> deleteCarouselSectionImage(@PathVariable Integer id) {
+        return ResponseEntity.ok(homeService.deleteCarouselUploadedImage(id));
     }
 
     @PatchMapping("/homepage-text")

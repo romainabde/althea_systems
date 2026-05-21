@@ -21,7 +21,11 @@ function normalizeCartPayload(raw) {
     const pid = row.productId ?? row.id;
     const price = Number(row.unitPrice ?? row.price ?? 0);
     const qty = Number(row.quantity ?? 1);
-    const stock = Number(row.availableStock ?? row.stockQuantity ?? 999);
+    const stockRaw = row.availableStock ?? row.stockQuantity;
+    const stock =
+      stockRaw != null && stockRaw !== ""
+        ? Number(stockRaw)
+        : null;
 
     return {
       id: pid,
@@ -29,8 +33,8 @@ function normalizeCartPayload(raw) {
       name: row.name ?? `Produit ${pid}`,
       price,
       quantity: qty,
-      inStock: row.inStock !== false && stock > 0,
-      stockQuantity: Math.max(stock, 1),
+      inStock: stock != null ? stock > 0 : row.inStock !== false,
+      stockQuantity: stock != null ? Math.max(0, stock) : null,
       imageUrl: row.imageUrl ?? PLACEHOLDER_IMG,
     };
   });

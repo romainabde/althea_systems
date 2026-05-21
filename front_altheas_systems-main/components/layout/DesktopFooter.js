@@ -17,7 +17,7 @@ export default function DesktopFooter() {
           <Link href="#" className={styles.link}>
             CGU
           </Link>
-          <Link href="#" className={styles.link}>
+          <Link href="/contact" className={styles.link}>
             Contact
           </Link>
         </nav>

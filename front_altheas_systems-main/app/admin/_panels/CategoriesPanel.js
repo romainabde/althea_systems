@@ -5,11 +5,20 @@ import styles from "../admin.module.css";
 import ResourcePanel from "../_components/ResourcePanel";
 import useResource from "../_components/useResource";
 import { categoriesApi } from "../_services/adminApi";
+import { API_CONFIG } from "../../../services/config";
 
 // Aligné avec com.althea.shared.model.Category :
 //   { id, name, description, imageUrl, displayOrder, active,
 //     createdAt, updatedAt }
-// (le champ "products" est ignoré côté JSON via @JsonIgnore)
+// L'image catalogue est enregistrée en Mongo (multipart) comme pour les produits ;
+// imageUrl stocke alors /images/{idMongo}.
+
+function categoryImagePreviewUrl(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== "string") return null;
+  const path = imageUrl.startsWith("/") ? imageUrl : `/${imageUrl}`;
+  const base = API_CONFIG.catalogBaseUrl.replace(/\/$/, "");
+  return `${base}${path}`;
+}
 
 export default function CategoriesPanel() {
   const { rows, loading, error, refresh, run } = useResource(
@@ -53,7 +62,28 @@ export default function CategoriesPanel() {
         </span>
       ),
     },
-    { key: "imageUrl", label: "Image" },
+    {
+      key: "imageUrl",
+      label: "Image",
+      width: "72px",
+      render: (row) => {
+        const src = categoryImagePreviewUrl(row.imageUrl);
+        if (!src) return <span className={styles.helperText}>—</span>;
+        return (
+          <img
+            src={src}
+            alt=""
+            style={{
+              width: 48,
+              height: 48,
+              objectFit: "cover",
+              borderRadius: 6,
+              border: "1px solid #e2e8f0",
+            }}
+          />
+        );
+      },
+    },
   ];
 
   return (
@@ -70,7 +100,6 @@ export default function CategoriesPanel() {
       emptyValues={{
         name: "",
         description: "",
-        imageUrl: "",
         displayOrder: 1,
         active: true,
       }}
@@ -79,15 +108,18 @@ export default function CategoriesPanel() {
       onDelete={handleDelete}
       onDeleteMany={handleDeleteMany}
       renderForm={CategoryForm}
+      renderDetail={(row, detailCtx) => (
+        <CategoryDetail category={row} detailContext={detailCtx} />
+      )}
     />
   );
 }
 
+/** Sans imageUrl : l'image est gérée uniquement depuis la vue Détail (upload fichier). */
 function toPayload(values) {
   return {
     name: values.name?.trim() || null,
     description: values.description ?? null,
-    imageUrl: values.imageUrl ?? null,
     displayOrder:
       values.displayOrder === "" || values.displayOrder == null
         ? null
@@ -100,7 +132,6 @@ function CategoryForm({ initialValues, onSubmit, onCancel, mode }) {
   const [values, setValues] = useState({
     name: initialValues.name ?? "",
     description: initialValues.description ?? "",
-    imageUrl: initialValues.imageUrl ?? "",
     displayOrder: initialValues.displayOrder ?? 1,
     active: initialValues.active ?? true,
   });
@@ -139,14 +170,6 @@ function CategoryForm({ initialValues, onSubmit, onCancel, mode }) {
           />
         </div>
         <div className={styles.formGroup}>
-          <label className={styles.label}>URL image</label>
-          <input
-            className={styles.input}
-            value={values.imageUrl}
-            onChange={(e) => update("imageUrl", e.target.value)}
-          />
-        </div>
-        <div className={styles.formGroup}>
           <label className={styles.label}>Active</label>
           <select
             className={styles.select}
@@ -166,6 +189,12 @@ function CategoryForm({ initialValues, onSubmit, onCancel, mode }) {
           onChange={(e) => update("description", e.target.value)}
         />
       </div>
+      {mode === "create" && (
+        <p style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#64748b" }}>
+          Après création, ouvrez <strong>Détails</strong> pour ajouter une image
+          fichier (MongoDB, comme pour les produits).
+        </p>
+      )}
       <div className={styles.formActions}>
         <button
           type="button"
@@ -179,5 +208,143 @@ function CategoryForm({ initialValues, onSubmit, onCancel, mode }) {
         </button>
       </div>
     </form>
+  );
+}
+
+function CategoryDetail({ category, detailContext }) {
+  const { onRefresh, replaceActiveRow } = detailContext ?? {};
+  const [uploadError, setUploadError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [deletingImg, setDeletingImg] = useState(false);
+
+  const previewSrc = categoryImagePreviewUrl(category?.imageUrl);
+
+  async function handleImageFileSelected(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || category?.id == null) return;
+
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      await categoriesApi.uploadCategoryImageFile(category.id, fd);
+      const fresh = await categoriesApi.get(category.id);
+      replaceActiveRow?.(fresh);
+      await onRefresh?.();
+    } catch (err) {
+      setUploadError(err?.message ?? String(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleRemoveImage() {
+    if (category?.id == null) return;
+    setUploadError(null);
+    setDeletingImg(true);
+    try {
+      const fresh = await categoriesApi.deleteUploadedImage(category.id);
+      replaceActiveRow?.(fresh);
+      await onRefresh?.();
+    } catch (err) {
+      setUploadError(err?.message ?? String(err));
+    } finally {
+      setDeletingImg(false);
+    }
+  }
+
+  return (
+    <div className={styles.detailGrid}>
+      <Detail label="ID" value={category.id} />
+      <Detail label="Nom" value={category.name} />
+      <Detail label="Ordre" value={category.displayOrder} />
+      <Detail label="Active" value={category.active ? "Oui" : "Non"} />
+      <Detail label="Image (URL catalogue)" value={category.imageUrl || "—"} />
+      <div className={styles.detailItem} style={{ gridColumn: "1 / -1" }}>
+        <span className={styles.detailLabel}>Description</span>
+        <span className={styles.detailValue}>
+          {category.description || "—"}
+        </span>
+      </div>
+
+      <div className={styles.detailItem} style={{ gridColumn: "1 / -1" }}>
+        <span className={styles.detailLabel}>Aperçu</span>
+        <div style={{ marginTop: "0.35rem" }}>
+          {previewSrc ? (
+            <img
+              src={previewSrc}
+              alt={category.name}
+              style={{
+                maxWidth: 240,
+                maxHeight: 160,
+                objectFit: "cover",
+                borderRadius: 8,
+                border: "1px solid #e2e8f0",
+              }}
+            />
+          ) : (
+            <span className={styles.helperText}>Aucune image</span>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.detailItem} style={{ gridColumn: "1 / -1" }}>
+        <span className={styles.detailLabel}>Image fichier</span>
+        <div style={{ marginTop: "0.35rem" }}>
+          <input
+            type="file"
+            accept="image/*"
+            disabled={uploading || deletingImg}
+            onChange={handleImageFileSelected}
+            aria-busy={uploading}
+          />
+          {(uploading || deletingImg) && (
+            <span style={{ marginLeft: "0.5rem", fontSize: "0.85rem" }}>
+              …
+            </span>
+          )}
+          {previewSrc &&
+            typeof category.imageUrl === "string" &&
+            category.imageUrl.startsWith("/images/") && (
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnSm} ${styles.btnDanger}`}
+                style={{ marginLeft: "0.5rem", verticalAlign: "middle" }}
+                disabled={uploading || deletingImg}
+                onClick={handleRemoveImage}
+              >
+                Supprimer l&apos;image
+              </button>
+            )}
+          {uploadError && (
+            <div
+              style={{
+                marginTop: "0.4rem",
+                color: "#b91c1c",
+                fontSize: "0.85rem",
+              }}
+            >
+              {uploadError}
+            </div>
+          )}
+          <p style={{ marginTop: "0.35rem", fontSize: "0.78rem", color: "#64748b" }}>
+            Même mécanisme que les produits : fichier stocké dans MongoDB, servi par
+            le catalogue ({API_CONFIG.catalogBaseUrl}
+            /images/…).
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Detail({ label, value }) {
+  return (
+    <div className={styles.detailItem}>
+      <span className={styles.detailLabel}>{label}</span>
+      <span className={styles.detailValue}>{value ?? "—"}</span>
+    </div>
   );
 }

@@ -2,6 +2,16 @@
  * Snapshot lecture seule pour les écrans qui n’ont pas accès au CartContext.
  * Alimenté par CartContext après chaque sync API (clés althea_cart + cart).
  */
+export function clearCartMirror() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem("althea_cart");
+    localStorage.removeItem("cart");
+  } catch {
+    /* private mode */
+  }
+}
+
 export function getCart() {
   if (typeof window === "undefined") return [];
 

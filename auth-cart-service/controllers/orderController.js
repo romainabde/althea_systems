@@ -1,7 +1,7 @@
 const prisma = require('../config/prisma');
-const Stripe = require("stripe");
-const stripe = new Stripe(process.env.STRIPE_KEY);
 const { sendOrderConfirmation } = require('../utils/emailService');
+const { getProductCatalogEntry } = require('../utils/productCatalog');
+const { getOrCreateStripeCustomer, stripe } = require('../utils/stripeCustomer');
 
 /** Liste des commandes du client connecté (JWT obligatoire). */
 exports.listMyOrders = async (req, res) => {
@@ -21,6 +21,35 @@ exports.listMyOrders = async (req, res) => {
     } catch (error) {
         console.error("🚨 ERREUR LISTE COMMANDES :", error);
         res.status(500).json({ message: "Erreur lors de la récupération des commandes." });
+    }
+};
+
+/** Détail d'une commande (propriétaire connecté). */
+exports.getOrderById = async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+        if (!userId) {
+            return res.status(401).json({ message: "Non authentifié." });
+        }
+
+        const id = parseInt(req.params.id, 10);
+        if (!Number.isFinite(id)) {
+            return res.status(400).json({ message: "Identifiant de commande invalide." });
+        }
+
+        const order = await prisma.order.findFirst({
+            where: { id, userId },
+            include: { items: true, address: true },
+        });
+
+        if (!order) {
+            return res.status(404).json({ message: "Commande introuvable." });
+        }
+
+        res.status(200).json({ order });
+    } catch (error) {
+        console.error("🚨 ERREUR DETAIL COMMANDE :", error);
+        res.status(500).json({ message: "Erreur lors de la récupération de la commande." });
     }
 };
 
@@ -57,18 +86,29 @@ exports.checkout = async (req, res) => {
             return res.status(400).json({ message: "Votre panier est vide." });
         }
 
-        // 2. Calculer le total
+        // 2. Calculer le total + vérifier le stock (même source que GET /api/cart)
         let totalAmount = 0;
-        const orderItemsData = cart.items.map(item => {
-            const unitPrice = 99; // Simulation de prix
+        const orderItemsData = [];
+
+        for (const item of cart.items) {
+            const productData = await getProductCatalogEntry(String(item.productId));
+            if (productData.stock < item.quantity) {
+                return res.status(400).json({
+                    message:
+                        productData.stock <= 0
+                            ? `${productData.name} n'est plus disponible.`
+                            : `Stock insuffisant pour ${productData.name} (${productData.stock} restant(s)).`,
+                });
+            }
+            const unitPrice = productData.price;
             totalAmount += unitPrice * item.quantity;
-            return {
+            orderItemsData.push({
                 productId: item.productId,
-                name: `Produit n°${item.productId}`,
+                name: productData.name,
                 price: unitPrice,
-                quantity: item.quantity
-            };
-        });
+                quantity: item.quantity,
+            });
+        }
 
         // 3. Créer la commande en "PENDING"
         const newOrder = await prisma.order.create({
@@ -126,14 +166,51 @@ exports.confirmPayment = async (req, res) => {
             return res.status(403).json({ message: "Vous n'avez pas l'autorisation de payer cette commande." });
         }
 
-        // 3. Appel à Stripe
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(order.totalAmount * 100), 
+        if (order.status !== 'PENDING') {
+            return res.status(400).json({ message: "Cette commande ne peut plus être payée." });
+        }
+
+        for (const item of order.items) {
+            const productData = await getProductCatalogEntry(String(item.productId));
+            if (productData.stock < item.quantity) {
+                return res.status(400).json({
+                    message:
+                        productData.stock <= 0
+                            ? `${productData.name} n'est plus disponible.`
+                            : `Stock insuffisant pour ${productData.name} (${productData.stock} restant(s)).`,
+                });
+            }
+        }
+
+        // 3. Paiement Stripe — avec client Stripe si la carte est enregistrée sur le compte
+        const pmId = String(paymentMethodId || "").trim();
+        if (!pmId) {
+            return res.status(400).json({ message: "Moyen de paiement invalide." });
+        }
+
+        let customerId = null;
+        if (userId) {
+            const savedPm = await prisma.paymentMethod.findFirst({
+                where: { userId, stripePaymentMethodId: pmId },
+            });
+            if (savedPm) {
+                const { customerId: cid } = await getOrCreateStripeCustomer(userId);
+                customerId = cid;
+            }
+        }
+
+        const intentParams = {
+            amount: Math.round(order.totalAmount * 100),
             currency: 'eur',
-            payment_method: paymentMethodId,
+            payment_method: pmId,
             confirm: true,
-            automatic_payment_methods: { enabled: true, allow_redirects: 'never' }
-        });
+            automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
+        };
+        if (customerId) {
+            intentParams.customer = customerId;
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create(intentParams);
 
         if (paymentIntent.status === 'succeeded') {
             // PAIEMENT OK : On valide et on vide le panier correspondant
@@ -154,8 +231,6 @@ exports.confirmPayment = async (req, res) => {
             const targetEmail = userId ? order.user.email : order.guestEmail;
 
             if (targetEmail) {
-                // On importe le service d'e-mail ici (ou tout en haut du fichier)
-                const { sendOrderConfirmation } = require('../utils/emailService');
                 sendOrderConfirmation(targetEmail, order);
             }
 
@@ -171,6 +246,10 @@ exports.confirmPayment = async (req, res) => {
 
     } catch (error) {
         console.error("🚨 ERREUR STRIPE :", error.message);
-        res.status(500).json({ message: "Erreur lors du traitement bancaire." });
+        const msg =
+            error.type === "StripeInvalidRequestError"
+                ? error.message
+                : "Erreur lors du traitement bancaire.";
+        res.status(500).json({ message: msg });
     }
 };

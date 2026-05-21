@@ -47,6 +47,7 @@ export const API_ROUTES = {
   /** Commandes du client connecté (JWT) — auth-cart-service */
   orders: {
     mine: "/api/orders/mine",
+    byId: (orderId) => `/api/orders/${orderId}`,
   },
   auth: {
     login: "/api/auth/login",
@@ -61,6 +62,9 @@ export const API_ROUTES = {
   users: {
     updateProfile: "/api/users/profile",
     addAddress: "/api/users/addresses",
+    listPayments: "/api/users/payments",
+    addPayment: "/api/users/payments",
+    deletePayment: (id) => `/api/users/payments/${id}`,
   },
   addresses: {
     list: "/api/addresses",

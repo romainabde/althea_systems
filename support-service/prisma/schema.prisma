@@ -1,12 +1,14 @@
-// Copie de réf. — client généré depuis ../auth-cart-service/prisma/schema.prisma
+// Schéma PostgreSQL (Neon) — même base que admin-service / catalog / auth-cart-service.
+//
+// VARIABLE : DATABASE_URL (voir .env.example). Ne pas utiliser SQLite en prod.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Cart {
@@ -100,10 +102,10 @@ model ContactMessage {
   fullName        String    @map("full_name")
   email           String
   subject         String
-  message         String    
+  message         String
   status          String    @default("NEW")
   createdAt       DateTime  @default(now()) @map("created_at")
-  responseMessage String?   @map("response_message") 
+  responseMessage String?   @map("response_message")
   respondedBy     String?   @map("responded_by")
   respondedAt     DateTime? @map("responded_at")
 
@@ -125,7 +127,7 @@ model ChatMessage {
   sessionId Int         @map("session_id")
   session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sender    String
-  text      String      
+  text      String
   createdAt DateTime    @default(now()) @map("created_at")
 
   @@map("chat_message")

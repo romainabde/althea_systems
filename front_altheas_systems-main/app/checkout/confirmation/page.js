@@ -1,90 +1,211 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { getCart } from "../../../utils/cart";
-
-const pageStyle = {
-  padding: "1rem",
-  maxWidth: "640px",
-  margin: "0 auto",
-};
-
-const cardStyle = {
-  border: "1px solid #ddd",
-  borderRadius: "12px",
-  padding: "1rem",
-  marginTop: "1rem",
-  background: "#fff",
-};
-
-const primaryButtonStyle = {
-  marginTop: "1rem",
-  display: "inline-flex",
-  justifyContent: "center",
-  width: "100%",
-  padding: "0.85rem 1rem",
-  borderRadius: "8px",
-  background: "#003d5c",
-  color: "#fff",
-  textDecoration: "none",
-  fontWeight: 600,
-};
-
-const secondaryButtonStyle = {
-  marginTop: "0.75rem",
-  display: "inline-flex",
-  justifyContent: "center",
-  width: "100%",
-  padding: "0.85rem 1rem",
-  borderRadius: "8px",
-  border: "1px solid #003d5c",
-  background: "#fff",
-  color: "#003d5c",
-  textDecoration: "none",
-  fontWeight: 600,
-};
-
-function buildMockOrderNumber() {
-  const now = new Date();
-  const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(
-    now.getDate()
-  ).padStart(2, "0")}`;
-  const randomPart = Math.floor(1000 + Math.random() * 9000);
-  return `ALTHEA-${stamp}-${randomPart}`;
-}
+import { useEffect, useState } from "react";
+import { useCheckoutAuthGate } from "../useCheckoutAuthGate";
+import { getLastConfirmation } from "../../../utils/checkoutSession";
 
 export default function CheckoutConfirmationPage() {
-  const orderNumber = useMemo(() => buildMockOrderNumber(), []);
-  const totalPaid = useMemo(() => {
-    const cart = getCart();
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const gate = useCheckoutAuthGate();
+  const [confirm, setConfirm] = useState(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setConfirm(getLastConfirmation());
+    setReady(true);
+    window.scrollTo(0, 0);
   }, []);
 
+  if (gate === "checking" || !ready) {
+    return (
+      <main
+        style={{
+          padding: "2rem",
+          textAlign: "center",
+          color: "#64748b",
+          fontFamily: "'Inter', sans-serif",
+        }}
+      >
+        <p style={{ margin: 0 }}>Vérification de la session…</p>
+      </main>
+    );
+  }
+
+  if (!confirm?.orderId) {
+    return (
+      <main
+        style={{
+          maxWidth: "800px",
+          margin: "80px auto",
+          padding: "40px",
+          fontFamily: "'Inter', sans-serif",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ color: "#0f172a" }}>Aucune commande à afficher</h1>
+        <p style={{ color: "#64748b" }}>
+          Retournez au catalogue ou au panier pour passer une commande.
+        </p>
+        <Link href="/">
+          <button
+            style={{
+              padding: "16px 30px",
+              backgroundColor: "#003d5c",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              marginTop: "20px",
+            }}
+          >
+            Retour à l&apos;accueil
+          </button>
+        </Link>
+      </main>
+    );
+  }
+
+  const totalLabel =
+    confirm.totalPaid != null && !Number.isNaN(Number(confirm.totalPaid))
+      ? `${(Number(confirm.totalPaid) * 1.2).toFixed(2)} € TTC`
+      : "—";
+
   return (
-    <section style={pageStyle}>
-      <h1 style={{ marginBottom: "0.35rem" }}>Commande confirmée</h1>
-      <p style={{ marginTop: 0, color: "#555" }}>
-        Merci pour votre achat. Votre commande a bien été prise en compte.
+    <main
+      style={{
+        maxWidth: "800px",
+        margin: "80px auto",
+        padding: "40px",
+        fontFamily: "'Inter', sans-serif",
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "#f0fdf4",
+          width: "100px",
+          height: "100px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 30px auto",
+          border: "2px solid #bbf7d0",
+        }}
+      >
+        <span style={{ fontSize: "3rem" }}>✅</span>
+      </div>
+
+      <h1
+        style={{
+          fontSize: "2.5rem",
+          color: "#0f172a",
+          marginBottom: "15px",
+        }}
+      >
+        Commande confirmée !
+      </h1>
+      <p
+        style={{
+          color: "#64748b",
+          fontSize: "1.2rem",
+          marginBottom: "40px",
+        }}
+      >
+        Merci pour votre confiance. Votre commande{" "}
+        <strong>#{confirm.orderId}</strong> est en cours de préparation par nos
+        équipes logistiques.
       </p>
 
-      <article style={cardStyle}>
-        <p style={{ margin: 0, fontWeight: 700 }}>Numéro de commande</p>
-        <p style={{ margin: "0.35rem 0 0 0", fontSize: "1.05rem" }}>{orderNumber}</p>
-      </article>
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "24px",
+          border: "1px solid #e2e8f0",
+          padding: "30px",
+          textAlign: "left",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.03)",
+          marginBottom: "40px",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 20px 0",
+            fontSize: "1.1rem",
+            color: "#0f172a",
+            borderBottom: "1px solid #f1f5f9",
+            paddingBottom: "15px",
+          }}
+        >
+          Détails de l&apos;expédition
+        </h3>
+        <p style={{ color: "#475569", margin: "0 0 10px 0" }}>
+          📦 <strong>Mode :</strong> Transporteur spécialisé matériel médical
+        </p>
+        <p style={{ color: "#475569", margin: "0 0 10px 0" }}>
+          📅 <strong>Délai estimé :</strong> 3 à 5 jours ouvrés
+        </p>
+        <p style={{ color: "#475569", margin: "0 0 10px 0" }}>
+          💳 <strong>Montant réglé :</strong> {totalLabel}
+        </p>
+        <p style={{ color: "#475569", margin: 0 }}>
+          📧 Un email récapitulatif a été envoyé à votre adresse professionnelle.
+        </p>
+        {confirm.transactionId ? (
+          <p
+            style={{
+              color: "#94a3b8",
+              margin: "12px 0 0 0",
+              fontSize: "0.85rem",
+              wordBreak: "break-all",
+            }}
+          >
+            Réf. Stripe : {confirm.transactionId}
+          </p>
+        ) : null}
+      </div>
 
-      <article style={cardStyle}>
-        <p style={{ margin: 0, fontWeight: 700 }}>Résumé rapide</p>
-        <p style={{ margin: "0.35rem 0 0 0", color: "#444" }}>Total payé : {totalPaid} €</p>
-      </article>
-
-      <Link href="/" style={primaryButtonStyle}>
-        Retour à l’accueil
-      </Link>
-
-      <Link href="/account" style={secondaryButtonStyle}>
-        Aller à mon compte
-      </Link>
-    </section>
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          justifyContent: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <Link href="/account/orders">
+          <button
+            style={{
+              padding: "16px 30px",
+              backgroundColor: "white",
+              border: "2px solid #e2e8f0",
+              borderRadius: "12px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              color: "#475569",
+            }}
+          >
+            Suivre ma commande
+          </button>
+        </Link>
+        <Link href="/">
+          <button
+            style={{
+              padding: "16px 30px",
+              backgroundColor: "#003d5c",
+              color: "white",
+              border: "none",
+              borderRadius: "12px",
+              fontWeight: "bold",
+              cursor: "pointer",
+              boxShadow: "0 10px 20px rgba(0,61,92,0.2)",
+            }}
+          >
+            Retour à l&apos;accueil
+          </button>
+        </Link>
+      </div>
+    </main>
   );
 }

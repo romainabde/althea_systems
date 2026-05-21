@@ -1,13 +1,14 @@
-// Schéma unique PostgreSQL (Neon, même base que admin/catalog) : auth, panier, commandes,
-// contact et chat support.
+// Schéma PostgreSQL (Neon) — même base que admin-service / catalog / support aligné projet.
+//
+// VARIABLE : DATABASE_URL (voir .env.example). Ne pas utiliser SQLite en prod.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Cart {
@@ -38,6 +39,7 @@ model User {
   fullName         String    @map("full_name")
   email            String    @unique
   passwordHash     String    @map("password_hash")
+  stripeCustomerId String?   @unique @map("stripe_customer_id")
   createdAt        DateTime  @default(now()) @map("created_at")
   isEmailConfirmed Boolean   @default(false) @map("is_email_confirmed")
   role             String    @default("CUSTOMER")
@@ -46,6 +48,7 @@ model User {
   cart             Cart?
   addresses        Address[]
   orders           Order[]
+  paymentMethods   PaymentMethod[]
 
   @@map("User")
 }
@@ -130,4 +133,20 @@ model ChatMessage {
   createdAt DateTime    @default(now()) @map("created_at")
 
   @@map("chat_message")
+}
+
+model PaymentMethod {
+  id                    Int      @id @default(autoincrement())
+  userId                Int      @map("user_id")
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripePaymentMethodId String   @unique @map("stripe_payment_method_id")
+  brand                 String
+  last4                 String   @map("last_4")
+  expMonth              Int      @map("exp_month")
+  expYear               Int      @map("exp_year")
+  cardName              String?  @map("card_name")
+  isDefault             Boolean  @default(false) @map("is_default")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  @@map("payment_method")
 }
