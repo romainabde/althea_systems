@@ -13,3 +13,16 @@ export async function fetchMyOrders() {
 
   return httpClient(API_ROUTES.orders.mine);
 }
+
+/**
+ * Détail d'une commande (JWT obligatoire, propriétaire uniquement).
+ * @param {number} orderId
+ * @returns {Promise<{ order: object }>}
+ */
+export async function fetchOrderById(orderId) {
+  if (API_CONFIG.useMocks) {
+    return { order: null };
+  }
+
+  return httpClient(API_ROUTES.orders.byId(Number(orderId)));
+}

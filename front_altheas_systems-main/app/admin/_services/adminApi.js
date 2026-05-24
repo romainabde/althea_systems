@@ -102,6 +102,13 @@ export const categoriesApi = {
   get: (id) => get(`/admin/categories/${id}`),
   create: (data) => post("/admin/categories", data),
   update: (id, data) => put(`/admin/categories/${id}`, data),
+  uploadCategoryImageFile: (id, formData) =>
+    httpClient(`/admin/categories/${id}/image`, {
+      method: "POST",
+      body: formData,
+    }),
+  deleteUploadedImage: (id) =>
+    httpClient(`/admin/categories/${id}/image`, { method: "DELETE" }),
   remove: (id) => del(`/admin/categories/${id}`),
   removeMany: (ids) =>
     Promise.all((ids ?? []).map((id) => categoriesApi.remove(id))),
@@ -153,6 +160,14 @@ export const homeCmsApi = {
     patch(`/admin/home/carousel/${id}`, data),
   deleteCarouselSection: (id) =>
     httpClient(`/admin/home/carousel/${id}`, { method: "DELETE" }),
+  /** multipart/form-data — body FormData avec la clé `file`, optionnellement `altText` */
+  uploadCarouselSectionImage: (id, formData) =>
+    httpClient(`/admin/home/carousel/${id}/image`, {
+      method: "POST",
+      body: formData,
+    }),
+  deleteCarouselSectionImage: (id) =>
+    httpClient(`/admin/home/carousel/${id}/image`, { method: "DELETE" }),
 
   // Texte d'accueil (1 seule ressource — UPDATE uniquement)
   getHomepageText: () => get("/admin/home/homepage-text"),

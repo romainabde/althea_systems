@@ -36,6 +36,7 @@ export function CartProvider({ children }) {
   const [cartTotalHT, setCartTotalHT] = useState(0);
   const [loading, setLoading] = useState(true);
   const [cartError, setCartError] = useState(null);
+  const [isMiniCartOpen, setIsMiniCartOpen] = useState(false);
 
   const refreshCart = useCallback(async () => {
     try {
@@ -73,16 +74,40 @@ export function CartProvider({ children }) {
   }, [pathname, refreshCart]);
 
   /** @returns {Promise<boolean>} */
-  const addToCart = async (product) => {
+  const addToCart = async (product, openMiniCart = true) => {
     try {
       setCartError(null);
+
+      const productId = product.id ?? product.productId;
+      const existing = cart.find(
+        (x) => (x.id ?? x.productId) === productId
+      );
+      const stockFromProduct =
+        product.stockQuantity ?? product.stock ?? null;
+      const maxStock =
+        existing?.stockQuantity ?? stockFromProduct ?? null;
+
+      if (maxStock != null && maxStock <= 0) {
+        setCartError("Produit indisponible.");
+        return false;
+      }
+      if (
+        existing &&
+        maxStock != null &&
+        existing.quantity >= maxStock
+      ) {
+        setCartError(`Stock maximum atteint (${maxStock}).`);
+        return false;
+      }
+
       await addCartItem({
-        productId: product.id,
+        productId,
         quantity: 1,
         name: product.name,
         price: product.price,
       });
       await refreshCart();
+      if (openMiniCart) setIsMiniCartOpen(true);
       return true;
     } catch (e) {
       setCartError(e?.message ?? "Impossible d'ajouter au panier");
@@ -113,9 +138,24 @@ export function CartProvider({ children }) {
   const updateQuantity = async (id, delta) => {
     const item = cart.find((x) => x.id === id);
     if (!item) return;
-    const max = item.stockQuantity ?? 999;
+
+    const max =
+      item.stockQuantity != null ? item.stockQuantity : 999;
+
+    if (max <= 0 && delta > 0) {
+      setCartError("Produit indisponible.");
+      return;
+    }
+
     const newQty = Math.max(1, Math.min(item.quantity + delta, max));
-    if (newQty === item.quantity) return;
+
+    if (newQty === item.quantity) {
+      if (delta > 0 && item.quantity >= max) {
+        setCartError(`Stock maximum atteint (${max}).`);
+      }
+      return;
+    }
+
     try {
       setCartError(null);
       await updateCartItem(id, { quantity: newQty });
@@ -124,6 +164,14 @@ export function CartProvider({ children }) {
       setCartError(e?.message ?? "Mise à jour impossible");
     }
   };
+
+  const resetLocalCart = useCallback(() => {
+    setCart([]);
+    setCartTotalHT(0);
+    setCartError(null);
+    setIsMiniCartOpen(false);
+    mirrorCartToStorage([]);
+  }, []);
 
   const isLoggedIn = !!getAuthToken();
 
@@ -134,12 +182,15 @@ export function CartProvider({ children }) {
         loading,
         cartError,
         refreshCart,
+        resetLocalCart,
         addToCart,
         removeFromCart,
         updateQuantity,
         clearCart,
         cartTotalHT,
         isLoggedIn,
+        isMiniCartOpen,
+        setIsMiniCartOpen,
       }}
     >
       {children}

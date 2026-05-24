@@ -3,36 +3,22 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import {
+  AccountAlert,
+  AccountEmptyState,
+  AccountPageShell,
+  StatusBadge,
+  accountCardStyle,
+  accountPrimaryBtn,
+} from "../../../components/account/accountStyles";
 import GuestAccountPrompt from "../../../components/account/GuestAccountPrompt";
 import { fetchMyOrders } from "../../../services/api/ordersApi";
 import { getAuthToken } from "../../../services/authSession";
-
-const pageStyle = {
-  padding: "1rem",
-  maxWidth: "760px",
-  margin: "0 auto",
-};
-
-const cardStyle = {
-  border: "1px solid #ddd",
-  borderRadius: "12px",
-  padding: "1rem",
-  marginTop: "1rem",
-  background: "#fff",
-};
-
-const STATUS_LABELS = {
-  PENDING: "En attente de paiement",
-  PAID: "Payée",
-  CANCELLED: "Annulée",
-  SHIPPED: "Expédiée",
-  DELIVERED: "Livrée",
-};
-
-function formatOrderStatus(status) {
-  if (!status) return "—";
-  return STATUS_LABELS[status] ?? status;
-}
+import {
+  clearLastConfirmation,
+  getLastConfirmation,
+} from "../../../utils/checkoutSession";
+import { amountHTToTTC, formatEuro } from "../../../utils/pricing";
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -52,14 +38,31 @@ function formatDate(iso) {
 
 function summarizeItems(items) {
   if (!Array.isArray(items) || items.length === 0) return "Aucun article";
+  const count = items.reduce((n, i) => n + (i.quantity || 1), 0);
   const names = items.map((i) => i.name || `Produit ${i.productId}`).join(", ");
-  return names.length > 120 ? `${names.slice(0, 117)}…` : names;
+  const short = names.length > 90 ? `${names.slice(0, 87)}…` : names;
+  return `${count} article${count > 1 ? "s" : ""} · ${short}`;
 }
 
 export default function AccountOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  useEffect(() => {
+    const confirm = getLastConfirmation();
+    if (confirm?.orderId) {
+      const totalLabel =
+        confirm.totalPaid != null && !Number.isNaN(Number(confirm.totalPaid))
+          ? ` — ${formatEuro(amountHTToTTC(confirm.totalPaid))} € TTC`
+          : "";
+      setSuccessMessage(
+        `Commande #${confirm.orderId} confirmée avec succès${totalLabel}.`
+      );
+      clearLastConfirmation();
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,62 +102,156 @@ export default function AccountOrdersPage() {
     };
   }, []);
 
-  return (
-    <section style={pageStyle}>
-      <h1 style={{ marginBottom: "0.35rem" }}>Mes commandes</h1>
-      <p style={{ marginTop: 0, color: "#555" }}>
-        Historique des commandes enregistrées sur votre compte (auth-cart-service).
-      </p>
-
-      {loading ? (
-        <article style={cardStyle}>
-          <p style={{ margin: 0 }}>Chargement…</p>
-        </article>
-      ) : error === "connect" ? (
-        <article style={cardStyle}>
+  if (error === "connect") {
+    return (
+      <AccountPageShell
+        title="Mes commandes"
+        subtitle="Historique de vos achats sur Althea Systems."
+        icon="📦"
+        accent="#2563eb"
+      >
+        <div style={{ ...accountCardStyle, padding: "32px" }}>
           <GuestAccountPrompt
             description="Connectez-vous ou créez un compte pour voir vos commandes."
             nextPath="/account/orders"
           />
-        </article>
+        </div>
+      </AccountPageShell>
+    );
+  }
+
+  return (
+    <AccountPageShell
+      title="Mes commandes"
+      subtitle="Suivez le statut de vos commandes et finalisez les paiements en attente."
+      icon="📦"
+      accent="#2563eb"
+    >
+      {successMessage ? (
+        <AccountAlert type="success">✅ {successMessage}</AccountAlert>
+      ) : null}
+
+      {loading ? (
+        <div style={{ ...accountCardStyle, textAlign: "center", color: "#64748b" }}>
+          Chargement de vos commandes…
+        </div>
       ) : error ? (
-        <article style={{ ...cardStyle, borderColor: "#fca5a5" }}>
-          <p style={{ margin: 0, color: "#b91c1c" }}>{error}</p>
-        </article>
+        <AccountAlert type="error">{error}</AccountAlert>
       ) : orders.length === 0 ? (
-        <article style={cardStyle}>
-          <p style={{ margin: 0 }}>Vous n&apos;avez pas encore de commande enregistrée.</p>
-        </article>
+        <AccountEmptyState
+          icon="📦"
+          title="Aucune commande"
+          description="Vos futures commandes apparaîtront ici."
+        />
       ) : (
-        <div style={{ display: "grid", gap: "0.75rem", marginTop: "1rem" }}>
+        <div style={{ display: "grid", gap: "16px" }}>
           {orders.map((order) => (
-            <article key={order.id} style={cardStyle}>
-              <p style={{ margin: 0, fontWeight: 700 }}>
-                Commande n°{order.id}
-              </p>
-              <p style={{ margin: "0.35rem 0 0 0", color: "#555" }}>
-                Date : {formatDate(order.createdAt)}
-              </p>
-              <p style={{ margin: "0.35rem 0 0 0", color: "#111" }}>
-                Montant total : {Number(order.totalAmount ?? 0).toLocaleString("fr-FR")} €
-              </p>
-              <p style={{ margin: "0.35rem 0 0 0", color: "#003d5c", fontWeight: 600 }}>
-                Statut : {formatOrderStatus(order.status)}
-              </p>
-              <p style={{ margin: "0.5rem 0 0 0", color: "#475569", fontSize: "0.92rem" }}>
+            <article
+              key={order.id}
+              style={{
+                ...accountCardStyle,
+                display: "flex",
+                flexDirection: "column",
+                gap: "14px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.82rem",
+                      color: "#64748b",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Commande
+                  </p>
+                  <p
+                    style={{
+                      margin: "4px 0 0 0",
+                      fontSize: "1.25rem",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    #{order.id}
+                  </p>
+                </div>
+                <StatusBadge status={order.status} />
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  gap: "12px",
+                  padding: "14px 16px",
+                  backgroundColor: "#f8fafc",
+                  borderRadius: "12px",
+                  border: "1px solid #f1f5f9",
+                }}
+              >
+                <div>
+                  <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8", fontWeight: 600 }}>
+                    DATE
+                  </p>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "0.9rem", color: "#334155" }}>
+                    {formatDate(order.createdAt)}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: 0, fontSize: "0.78rem", color: "#94a3b8", fontWeight: 600 }}>
+                    TOTAL TTC
+                  </p>
+                  <p
+                    style={{
+                      margin: "4px 0 0 0",
+                      fontSize: "1.05rem",
+                      fontWeight: 800,
+                      color: "#003d5c",
+                    }}
+                  >
+                    {formatEuro(amountHTToTTC(order.totalAmount))} €
+                  </p>
+                  <p style={{ margin: "2px 0 0 0", fontSize: "0.8rem", color: "#94a3b8" }}>
+                    {formatEuro(order.totalAmount)} € HT
+                  </p>
+                </div>
+              </div>
+
+              <p style={{ margin: 0, color: "#64748b", fontSize: "0.92rem", lineHeight: 1.5 }}>
                 {summarizeItems(order.items)}
               </p>
+
+              {order.status === "PENDING" ? (
+                <Link
+                  href={`/account/orders/${order.id}/pay`}
+                  style={{
+                    ...accountPrimaryBtn,
+                    display: "inline-block",
+                    textAlign: "center",
+                    textDecoration: "none",
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  Finaliser le paiement →
+                </Link>
+              ) : null}
             </article>
           ))}
         </div>
       )}
-
-      <Link
-        href="/account"
-        style={{ display: "inline-block", marginTop: "1rem", color: "#003d5c", textDecoration: "none" }}
-      >
-        Retour au compte
-      </Link>
-    </section>
+    </AccountPageShell>
   );
 }

@@ -18,6 +18,13 @@ function findProductInMockCatalog(productId) {
   return null;
 }
 
+/** Nom affichable — GET /products/:id renvoie souvent { product, images }. */
+export function getProductDisplayName(payload) {
+  if (!payload) return null;
+  const p = payload.product ?? payload;
+  return p?.name ?? p?.title ?? p?.productName ?? null;
+}
+
 export async function fetchAllCategories() {
   if (API_CONFIG.useMocks) {
     return Object.entries(mockCatalogData).map(([slug, data], index) => ({

@@ -188,7 +188,9 @@ export default function ProductPage() {
 
         setProduct(normalized);
         setSimilarProducts(normalizeSimilarDto(similarRaw));
-        setCurrentImage(normalized.imageUrls[0]);
+        setCurrentImage(
+          normalized.imageUrls?.[0] ?? PLACEHOLDER_IMG
+        );
       } catch (e) {
         if (cancelled) return;
         if (e.status === 404) {
@@ -216,7 +218,7 @@ export default function ProductPage() {
       name: product.name,
       price: product.price,
       inStock: product.inStock,
-      stockQuantity: Math.max(1, product.stockQuantity || 1),
+      stockQuantity: product.stockQuantity ?? (product.inStock ? 1 : 0),
       imageUrl: product.imageUrls?.[0] || PLACEHOLDER_IMG,
     };
   }, [product]);
@@ -259,7 +261,7 @@ export default function ProductPage() {
     );
   }
 
-  if (notFound || !product || !currentImage) {
+  if (notFound || !product) {
     return (
       <div style={{ padding: "100px", textAlign: "center" }}>
         <h1
@@ -281,6 +283,11 @@ export default function ProductPage() {
       </div>
     );
   }
+
+  const heroImage =
+    currentImage ??
+    product.imageUrls?.[0] ??
+    PLACEHOLDER_IMG;
 
   const techSpecs =
     product.specifications?.length > 0
@@ -309,7 +316,7 @@ export default function ProductPage() {
             fontWeight: "bold",
           }}
         >
-          ← Retour au catalogue
+          ← Retour en arrière
         </Link>
       </div>
 
@@ -328,7 +335,7 @@ export default function ProductPage() {
             style={{
               width: "100%",
               height: "400px",
-              backgroundImage: `url(${currentImage})`,
+              backgroundImage: `url(${heroImage})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               borderRadius: "16px",

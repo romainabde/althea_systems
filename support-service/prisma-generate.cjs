@@ -3,13 +3,7 @@ const path = require("path");
 
 require("dotenv").config({ path: path.resolve(__dirname, ".env") });
 
-const schemaPath = path.resolve(
-  __dirname,
-  "..",
-  "auth-cart-service",
-  "prisma",
-  "schema.prisma"
-);
+const schemaPath = path.resolve(__dirname, "prisma", "schema.prisma");
 
 execSync(`npx prisma generate --schema "${schemaPath}"`, {
   stdio: "inherit",

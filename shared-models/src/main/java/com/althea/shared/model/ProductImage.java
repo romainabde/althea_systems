@@ -17,7 +17,15 @@ public class ProductImage {
     @Id
     private String id;
 
+    /** Catalogue produit ; null pour une image de catégorie */
     private Integer productId;
+
+    /** Image unique catégorie ; null pour une image produit */
+    private Integer categoryId;
+
+    /** Image bannière carrousel page d'accueil ; null sinon */
+    private Integer carouselSectionId;
+
     private String url;
     private String altText;
     private String contentType;
